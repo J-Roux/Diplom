@@ -8,7 +8,7 @@ from scipy.io.wavfile import read
 import itertools
 CPU_COUNT = multiprocessing.cpu_count()
 
-from sklearn.neural_network import MLPClassifier
+#from sklearn.neural_network import MLPClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
@@ -16,7 +16,7 @@ from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
 from sklearn.naive_bayes import GaussianNB
 from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 from sklearn.metrics import confusion_matrix
-from sklearn.model_selection import cross_val_predict
+#from sklearn.model_selection import cross_val_predict
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import scale
 from matplotlib import pyplot as plt
@@ -96,6 +96,30 @@ class SpectralDissymmetry(FeatureExtractorModel, SpectralFeature):
         return np.sqrt(np.abs((np.power(np.arange(len(data)) - spectral_centroid, 3) * data).sum() / data.sum()))
 
 
+class LinearRegression(FeatureExtractorModel, SpectralFeature):
+    
+    def get(self, data, params=None):
+        Nb = len(data)
+        F = np.arange(Nb)
+        a = data
+        beta =( Nb * (F * a).sum() - F.sum() * a.sum()) / (Nb * np.power(F, 2).sum() - np.power(F, 2).sum())
+        return beta
+
+class Rolloff(FeatureExtractorModel, SpectralFeature):
+
+    def get(self, data, params=None):
+        partial_sum = 0.85 * data.sum()
+        accumulator = 0.0
+        R = 0
+        for i in range(len(data)):
+            accumulator += data[i]
+            if(accumulator >= partial_sum):
+                R = i
+                break
+        return R
+
+
+
 class TestFeatureExtractor(unittest.TestCase):
     test_data = np.linspace(-np.pi * 100, np.pi * 100, 500)
     test_data_spectre = scipy.fft(test_data)
@@ -128,7 +152,7 @@ class TestFeatureExtractor(unittest.TestCase):
         a = spcentroid.get(self.test_data_spectre)
         spspread.get(self.test_data_spectre, [a])
 
-from scipy.signal import stft
+#from scipy.signal import stft
 
 class FeatureExtractor:
     time_feature_models = {}
@@ -160,7 +184,6 @@ class FeatureExtractor:
         results = []
         for frame in frames:
             self.eval_models(self.time_feature_models, frame)
-            #t, f, Zxx = signal.stft(data, fs)
             spectre_feature = np.abs(scipy.fft(frame))
             self.eval_models(self.spectre_feature_models, spectre_feature)
             results.append(self.results.values())
@@ -193,13 +216,13 @@ classifiers = [
     SVC(kernel="linear", C=0.025),
     DecisionTreeClassifier(max_depth=5),
     RandomForestClassifier(max_depth=5, n_estimators=10, max_features=1),
-    MLPClassifier(alpha=1),
+ #   MLPClassifier(alpha=1),
     AdaBoostClassifier(),
     GaussianNB(),
     QuadraticDiscriminantAnalysis(),
     ]
 
-from scikits.talkbox.features import mfcc
+#from scikits.talkbox.features import mfcc
 
 def create_feature(fn):
     print fn
@@ -245,7 +268,6 @@ def classify(data, labels, name, clf):
     plot_confusion_matrix(cnf_matrix, classes=genre_list,
                           title=name)
 
-    # Plot normalized confusion matrix
 
 
 
@@ -289,7 +311,6 @@ def write_ceps(ceps, fn):
     base_fn, ext = os.path.splitext(fn)
     data_fn = base_fn + '.ceps'
     np.savetxt(data_fn, ceps)
-    #print('Written to %s' % data_fn)
 
 def create_ceps(fn):
     print fn
@@ -321,7 +342,17 @@ def read_ceps_par(base_dir, label, genre):
     return X, y
 
 import timeit
+import pywt
 
+ 
+class LowPassSinglePole:
+    def __init__(self, decay):
+        self.b = 1 - decay
+        self.y = 0
+    def filter(self, x):
+        self.y += self.b * (x - self.y)
+        return self.y
+                                                  
 if __name__ == '__main__':
     plt.interactive(False)
     file_list = glob.glob('C:\\Users\\Pavel\\Downloads\\genres\\*\\*.wav')
@@ -329,24 +360,18 @@ if __name__ == '__main__':
     #    delayed(create_ceps)(wav_file) for wav_file in file_list
     #)
 
-    start = timeit.default_timer()
-    #data, labels = read_ceps(genre_list, 'C:\\Users\\Pavel\\Downloads\\genres\\') #= read_feature(genre_list, 'C:\\Users\\Pavel\\Downloads\\genres\\')  #
-    data = Parallel(n_jobs=CPU_COUNT) (
-        delayed(read_ceps_par)('C:\\Users\\Pavel\\Downloads\\genres\\', label, genre) for label, genre in enumerate(genre_list)
-    )
+    #data = Parallel(n_jobs=CPU_COUNT) (
+    #    delayed(read_ceps_par)('C:\\Users\\Pavel\\Downloads\\genres\\', label, genre) for label, genre in enumerate(genre_list)
+   # )
 
-    label = np.array(map(lambda x : x[1], data)).flatten()
-    data  = np.array(map(lambda x : x[0], data)).flatten()
-    stop = timeit.default_timer()
-    print stop - start
+    #label = np.array(map(lambda x : x[1], data)).flatten()
+    #data  = np.array(map(lambda x : x[0], data)).flatten()
 
     #data = scale(data)
 
     #Parallel(n_jobs=CPU_COUNT)(
     #   delayed(classify)(data, labels, name, clf) for name, clf in zip(names, classifiers)
     #)
-    #print data[0]
-    #print labels
     #clf = LinearRegression()
     #clf.fit(data, labels)
     #predicted = clf.predict(data)
@@ -355,4 +380,35 @@ if __name__ == '__main__':
     #mat = confusion_matrix(labels, predicted)
     #plt.figure()
     #plot_confusion_matrix(mat, classes=genre_list,
-    #                      title='LinearRegression')
+    #i                      title='LinearRegression')
+    sample_rate, test_data = scipy.io.wavfile.read('/home/pavel/workspace/Diplom/music/genres/blues/blues.00000.wav')
+    #test_data = np.linspace(-np.pi * 100, np.pi * 100, 500)
+    #test_data_spectre = np.abs(scipy.fft(test_data))
+    print len(test_data)
+    test_data = test_data[:4096]
+    data = np.array( pywt.swt(test_data, 'db4', level=2))
+    print data.shape
+    data = np.abs(data)
+    print data.shape
+    data = data.reshape(4, data.shape[-1])
+    #decay = 0.99
+    #results = []
+    #for i in data:
+    #    fltr = LowPassSinglePole(decay)
+    #    result = []
+        for j in i:
+            result.append(fltr.filter(j))
+        results.append(result[::16])
+    data = np.array(results)
+    data = scale(data, axis=1)
+    data = data[0] + data[1] + data[2] + data[3]
+    results = np.correlate(data, data, mode='full')
+    data = results[len(results) / 2:]
+    plt.plot(data)
+    plt.show()
+    
+    #data = map(lambda x : lp2bp(x, 0.99)[::16], data)
+    #data = scale(data, axis=1)
+    #print data
+    
+
