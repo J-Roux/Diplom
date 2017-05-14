@@ -8,7 +8,7 @@ from scipy.io.wavfile import read
 import itertools
 CPU_COUNT = multiprocessing.cpu_count()
 
-#from sklearn.neural_network import MLPClassifier
+from sklearn.neural_network import MLPClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
@@ -16,7 +16,7 @@ from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
 from sklearn.naive_bayes import GaussianNB
 from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 from sklearn.metrics import confusion_matrix
-#from sklearn.model_selection import cross_val_predict
+from sklearn.model_selection import cross_val_predict
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import scale
 from matplotlib import pyplot as plt
@@ -216,23 +216,14 @@ classifiers = [
     SVC(kernel="linear", C=0.025),
     DecisionTreeClassifier(max_depth=5),
     RandomForestClassifier(max_depth=5, n_estimators=10, max_features=1),
- #   MLPClassifier(alpha=1),
+    MLPClassifier(alpha=1),
     AdaBoostClassifier(),
     GaussianNB(),
     QuadraticDiscriminantAnalysis(),
     ]
 
-#from scikits.talkbox.features import mfcc
+from scikits.talkbox.features import mfcc
 
-def create_feature(fn):
-    print fn
-    sample_rate, X = read(fn)
-    feature_extractor = FeatureExtractor()
-    feature_extractor.set_models(models)
-    fft_features = feature_extractor.get(X, sample_rate, 1)
-    base_fn, ext = os.path.splitext(fn)
-    data_fn = base_fn + ".fft"
-    np.savetxt(data_fn, fft_features)
 
 
 
@@ -251,11 +242,16 @@ def read_feature(genre_list, base_dir):
             Y.append(label)
     return np.array(X), np.array(Y)
 
-
-
-
-
-
+def read_feature_par(base_dir, label, genre):
+    X, y = [], []
+    for fn in glob.glob(os.path.join(base_dir, genre, '*.fft')):
+        ceps = np.loadtxt(fn)
+        num_ceps = len(ceps)
+        mean = np.mean(ceps[int(num_ceps * 0.1):int(num_ceps * 0.9)], axis=0)
+        std = np.std(ceps[int(num_ceps * 0.1):int(num_ceps * 0.9)], axis=0)
+        X.append(np.concatenate((mean, std)))
+        y.append(label)
+    return X, y
 
 
 
@@ -352,26 +348,88 @@ class LowPassSinglePole:
     def filter(self, x):
         self.y += self.b * (x - self.y)
         return self.y
-                                                  
+
+import peakutils
+
+def get_percusion_data(frame):
+    data = np.array(pywt.swt(frame, 'db4', level=4))
+    data = np.array([np.sqrt(np.power(i[0], 2) + np.power(i[1], 2)) for i in data])
+    data = data.reshape(4, data.shape[-1])
+    decay = 0.99
+    results = []
+    for i in data:
+        fltr = LowPassSinglePole(decay)
+        result = []
+        for j in i:
+            result.append(fltr.filter(j))
+        results.append(result[::16])
+    data = np.array(results)
+    data = scale(data[0], with_mean=True) + scale(data[1], with_mean=True) + \
+           scale(data[2], with_mean=True) + scale(data[3], with_mean=True)
+
+    data = scipy.fft(data)
+    data = np.abs(scipy.ifft(data * data)) / len(data) / 4
+    indexes = peakutils.indexes(data, thres=0.2 / max(data), min_dist=10)
+    period0 = indexes[0]
+    amplitude0 = data[indexes[0]]
+    if (len(indexes) > 2):
+        ratioPeriod1 = indexes[1] / indexes[0]
+        amplitude1 = data[indexes[1]]
+    else:
+        ratioPeriod1 = 0
+        amplitude1 = 0
+    if (len(indexes) > 3):
+        ratioPeriod2 = indexes[2] / indexes[1]
+        amplitude2 = data[indexes[2]]
+    else:
+        ratioPeriod2 = 0
+        amplitude2 = 0
+    if (len(indexes) > 4):
+        ratioPeriod3 = indexes[3] / indexes[2]
+        amplitude3 = data[indexes[3]]
+    else:
+        ratioPeriod3 = 0
+        amplitude3 = 0
+    return np.array([period0, amplitude0, ratioPeriod1, amplitude1, ratioPeriod2, amplitude2, ratioPeriod3, amplitude3])
+
+
+def create_feature(fn):
+    print fn
+    sample_rate, X = read(fn)
+    feature_extractor = FeatureExtractor()
+    feature_extractor.set_models(models)
+    fft_features = feature_extractor.get(X, sample_rate, 1)
+    size = int(len(X) /sample_rate / 1)
+    frames = np.split(X[:size * sample_rate], size)
+    percusion_feature = []
+    for i in frames:
+        percusion_feature.append(get_percusion_data(i[:16384]))
+    result = np.concatenate((fft_features, percusion_feature), axis=1).shape
+    base_fn, ext = os.path.splitext(fn)
+    data_fn = base_fn + ".fft"
+    np.savetxt(data_fn, np.array(result))
+
+
+
 if __name__ == '__main__':
     plt.interactive(False)
-    file_list = glob.glob('C:\\Users\\Pavel\\Downloads\\genres\\*\\*.wav')
-    #Parallel(n_jobs=CPU_COUNT)(
-    #    delayed(create_ceps)(wav_file) for wav_file in file_list
-    #)
+    file_list = glob.glob('/home/pavel/Documents/genres/*/*.wav')
+    Parallel(n_jobs=CPU_COUNT)(
+        delayed(create_feature)(wav_file) for wav_file in file_list
+    )
 
-    #data = Parallel(n_jobs=CPU_COUNT) (
-    #    delayed(read_ceps_par)('C:\\Users\\Pavel\\Downloads\\genres\\', label, genre) for label, genre in enumerate(genre_list)
-   # )
+    data = Parallel(n_jobs=CPU_COUNT) (
+        delayed(read_feature_par)('/home/pavel/Documents/genres/', label, genre) for label, genre in enumerate(genre_list)
+    )
 
-    #label = np.array(map(lambda x : x[1], data)).flatten()
-    #data  = np.array(map(lambda x : x[0], data)).flatten()
+    labels = np.array(map(lambda x : x[1], data)).flatten()
+    data  = np.array(map(lambda x : x[0], data)).flatten()
 
     #data = scale(data)
 
-    #Parallel(n_jobs=CPU_COUNT)(
-    #   delayed(classify)(data, labels, name, clf) for name, clf in zip(names, classifiers)
-    #)
+    Parallel(n_jobs=CPU_COUNT)(
+       delayed(classify)(data, labels, name, clf) for name, clf in zip(names, classifiers)
+    )
     #clf = LinearRegression()
     #clf.fit(data, labels)
     #predicted = clf.predict(data)
@@ -381,34 +439,3 @@ if __name__ == '__main__':
     #plt.figure()
     #plot_confusion_matrix(mat, classes=genre_list,
     #i                      title='LinearRegression')
-    sample_rate, test_data = scipy.io.wavfile.read('/home/pavel/workspace/Diplom/music/genres/blues/blues.00000.wav')
-    #test_data = np.linspace(-np.pi * 100, np.pi * 100, 500)
-    #test_data_spectre = np.abs(scipy.fft(test_data))
-    print len(test_data)
-    test_data = test_data[:4096]
-    data = np.array( pywt.swt(test_data, 'db4', level=2))
-    print data.shape
-    data = np.abs(data)
-    print data.shape
-    data = data.reshape(4, data.shape[-1])
-    #decay = 0.99
-    #results = []
-    #for i in data:
-    #    fltr = LowPassSinglePole(decay)
-    #    result = []
-        for j in i:
-            result.append(fltr.filter(j))
-        results.append(result[::16])
-    data = np.array(results)
-    data = scale(data, axis=1)
-    data = data[0] + data[1] + data[2] + data[3]
-    results = np.correlate(data, data, mode='full')
-    data = results[len(results) / 2:]
-    plt.plot(data)
-    plt.show()
-    
-    #data = map(lambda x : lp2bp(x, 0.99)[::16], data)
-    #data = scale(data, axis=1)
-    #print data
-    
-
