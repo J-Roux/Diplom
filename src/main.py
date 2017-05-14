@@ -6,7 +6,8 @@ import multiprocessing
 from joblib import Parallel, delayed
 from scipy.io.wavfile import read
 import itertools
-CPU_COUNT = multiprocessing.cpu_count()
+
+CPU_COUNT = multiprocessing.cpu_count() - 1
 
 from sklearn.neural_network import MLPClassifier
 from sklearn.neighbors import KNeighborsClassifier
@@ -204,8 +205,12 @@ genre_list = ['classical',
               'jazz',
               'country',
               'pop',
-              'rock']#,
-              #'metal','blues', 'disco','hiphop','reggae']
+              'rock']
+#  'metal',
+#  'blues',
+#  'disco',
+#  'hiphop',
+#  'reggae']
 
 names = ["Nearest Neighbors", "Linear SVM",
          "Decision Tree", "Random Forest", "Neural Net", "AdaBoost",
@@ -224,8 +229,7 @@ classifiers = [
 
 from scikits.talkbox.features import mfcc
 
-
-
+from scipy.stats import kurtosis, skew
 
 def read_feature(genre_list, base_dir):
     X = []
@@ -238,7 +242,9 @@ def read_feature(genre_list, base_dir):
             len_fft = len(fft_features)
             mean = np.mean(fft_features[int(len_fft * 0.1):int(len_fft * 0.9)], axis=0)
             std = np.std(fft_features[int(len_fft * 0.1):int(len_fft * 0.9)], axis=0)
-            X.append(np.concatenate((mean, std)))
+            kurtosis_val = kurtosis(fft_features[int(len_fft * 0.1):int(len_fft * 0.9)])
+            skew_val = skew(fft_features[int(len_fft * 0.1):int(len_fft * 0.9)])
+            X.append(np.concatenate((mean, std, kurtosis_val, skew_val)))
             Y.append(label)
     return np.array(X), np.array(Y)
 
@@ -251,6 +257,7 @@ def read_feature_par(base_dir, label, genre):
         std = np.std(ceps[int(num_ceps * 0.1):int(num_ceps * 0.9)], axis=0)
         X.append(np.concatenate((mean, std)))
         y.append(label)
+        print np.array(X).shape
     return X, y
 
 
@@ -261,7 +268,7 @@ def classify(data, labels, name, clf):
     cnf_matrix = confusion_matrix(labels, predicted)
     np.set_printoptions(precision=2)
     plt.figure()
-    plot_confusion_matrix(cnf_matrix, classes=genre_list,
+    plot_confusion_matrix(cnf_matrix, classes=genre_list, normalize=True,
                           title=name)
 
 
@@ -283,7 +290,7 @@ def plot_confusion_matrix(cm, classes,
     plt.yticks(tick_marks, classes)
 
     if normalize:
-        cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+        cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis] * 100
         print("Normalized confusion matrix")
     else:
         print('Confusion matrix, without normalization')
@@ -394,38 +401,58 @@ def get_percusion_data(frame):
 
 
 def create_feature(fn):
-    print fn
     sample_rate, X = read(fn)
     feature_extractor = FeatureExtractor()
     feature_extractor.set_models(models)
     fft_features = feature_extractor.get(X, sample_rate, 1)
-    size = int(len(X) /sample_rate / 1)
+    size = int(len(X) / sample_rate / 1)
     frames = np.split(X[:size * sample_rate], size)
+    print fn + ' %i' % len(X)
+    ceps, mspec, spec = mfcc(X)
+
+    new_ceps = np.array([np.mean(x, axis=0) for x in np.split(ceps[:4110], size)])
     percusion_feature = []
     for i in frames:
         percusion_feature.append(get_percusion_data(i[:16384]))
-    result = np.concatenate((fft_features, percusion_feature), axis=1).shape
+    result = np.concatenate((fft_features, percusion_feature, new_ceps), axis=1)
     base_fn, ext = os.path.splitext(fn)
     data_fn = base_fn + ".fft"
-    np.savetxt(data_fn, np.array(result))
+    np.savetxt(data_fn, np.array(fft_features))
+    # print fn
 
+
+import platform
+
+path = ''
+path_to_wav = ''
+
+if platform.system() == 'Windows':
+    path = 'C:\\Users\\Pavel\\Downloads\\genres'
+    path_to_wav = path + '\\*\\*.wav'
+else:
+    path = '/home/pavel/Documents/genres/'
+    path_to_wav = path + '/*/*.wav'
 
 
 if __name__ == '__main__':
     plt.interactive(False)
-    file_list = glob.glob('/home/pavel/Documents/genres/*/*.wav')
-    Parallel(n_jobs=CPU_COUNT)(
-        delayed(create_feature)(wav_file) for wav_file in file_list
-    )
+    print platform.system()
+    file_list = glob.glob(path_to_wav)
+    # Parallel(n_jobs=CPU_COUNT)(
+    #    delayed(create_feature)(wav_file) for wav_file in file_list
+    # )
+    #print 'create feature -- done'
 
-    data = Parallel(n_jobs=CPU_COUNT) (
-        delayed(read_feature_par)('/home/pavel/Documents/genres/', label, genre) for label, genre in enumerate(genre_list)
-    )
+    # data = Parallel(n_jobs=CPU_COUNT) (
+    #    delayed(read_feature_par)(path, label, genre) for label, genre in enumerate(genre_list)
+    # )
 
-    labels = np.array(map(lambda x : x[1], data)).flatten()
-    data  = np.array(map(lambda x : x[0], data)).flatten()
+    # labels = np.array(map(lambda x : x[1], data)).flatten()
+    #data  = np.array(map(lambda x : x[0], data)).flatten()
 
-    #data = scale(data)
+    data, labels = read_feature(genre_list, path)
+    print 'read feature -- done'
+    data = scale(data)
 
     Parallel(n_jobs=CPU_COUNT)(
        delayed(classify)(data, labels, name, clf) for name, clf in zip(names, classifiers)
