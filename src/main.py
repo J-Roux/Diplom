@@ -7,7 +7,7 @@ from joblib import Parallel, delayed
 from scipy.io.wavfile import read
 import itertools
 
-CPU_COUNT = multiprocessing.cpu_count() - 1
+CPU_COUNT = multiprocessing.cpu_count()
 
 from sklearn.neural_network import MLPClassifier
 from sklearn.neighbors import KNeighborsClassifier
@@ -119,7 +119,19 @@ class Rolloff(FeatureExtractorModel, SpectralFeature):
                 break
         return R
 
+class SFM(FeatureExtractorModel, SpectralFeature):
 
+    def get(self, data, params=None):
+        accumulator = 0.0
+        for i in data:
+            accumulator *= i
+        accumulator = pow(accumulator, 1.1 / len(data))
+        return accumulator / len(data) / data.sum()
+
+class SCF(FeatureExtractorModel, SpectralFeature):
+
+    def get(self, data, params=None):
+        return np.max(data) / len(data) / data.sum()
 
 class TestFeatureExtractor(unittest.TestCase):
     test_data = np.linspace(-np.pi * 100, np.pi * 100, 500)
@@ -181,7 +193,7 @@ class FeatureExtractor:
 
     def get(self, data, fs, frame_size_sec):
         size =  int(len(data) / fs / frame_size_sec)
-        frames = np.split(data[:size * fs], size)
+        frames = np.split(data[:int(size * fs * frame_size_sec)], size)
         results = []
         for frame in frames:
             self.eval_models(self.time_feature_models, frame)
@@ -198,19 +210,23 @@ models = {
         Autocorrelation: [],
         SpectralCentroid: [],
         SpectralSmoothness: [SpectralCentroid],
-        SpectralDissymmetry: [SpectralCentroid]
+        SpectralDissymmetry: [SpectralCentroid],
+        Rolloff: [],
+        LinearRegression: [],
+        SFM: [],
+        SCF: []
 }
 
 genre_list = ['classical',
               'jazz',
               'country',
               'pop',
-              'rock']
-#  'metal',
-#  'blues',
-#  'disco',
+              'rock',
+  'metal',
+  'blues',
+  'disco',
 #  'hiphop',
-#  'reggae']
+  'reggae']
 
 names = ["Nearest Neighbors", "Linear SVM",
          "Decision Tree", "Random Forest", "Neural Net", "AdaBoost",
@@ -221,7 +237,7 @@ classifiers = [
     SVC(kernel="linear", C=0.025),
     DecisionTreeClassifier(max_depth=5),
     RandomForestClassifier(max_depth=5, n_estimators=10, max_features=1),
-    MLPClassifier(alpha=1),
+    MLPClassifier(alpha=1,hidden_layer_sizes=(300, 100)),
     AdaBoostClassifier(),
     GaussianNB(),
     QuadraticDiscriminantAnalysis(),
@@ -235,16 +251,19 @@ def read_feature(genre_list, base_dir):
     X = []
     Y = []
     for label, genre in enumerate(genre_list):
+        print genre
         genre_dir = os.path.join(base_dir, genre, "*.fft")
         file_list = glob.glob(genre_dir)
         for fn in file_list:
             fft_features = np.loadtxt(fn)
+            fft_features = np.nan_to_num(fft_features)
             len_fft = len(fft_features)
             mean = np.mean(fft_features[int(len_fft * 0.1):int(len_fft * 0.9)], axis=0)
             std = np.std(fft_features[int(len_fft * 0.1):int(len_fft * 0.9)], axis=0)
-            kurtosis_val = kurtosis(fft_features[int(len_fft * 0.1):int(len_fft * 0.9)])
-            skew_val = skew(fft_features[int(len_fft * 0.1):int(len_fft * 0.9)])
-            X.append(np.concatenate((mean, std, kurtosis_val, skew_val)))
+
+            #kurtosis_val = kurtosis(fft_features[int(len_fft * 0.1):int(len_fft * 0.9)])
+            #skew_val = skew(fft_features[int(len_fft * 0.1):int(len_fft * 0.9)])
+            X.append(np.concatenate((mean, std,)))
             Y.append(label)
     return np.array(X), np.array(Y)
 
@@ -254,6 +273,7 @@ def read_feature_par(base_dir, label, genre):
         ceps = np.loadtxt(fn)
         num_ceps = len(ceps)
         mean = np.mean(ceps[int(num_ceps * 0.1):int(num_ceps * 0.9)], axis=0)
+        print len(mean)
         std = np.std(ceps[int(num_ceps * 0.1):int(num_ceps * 0.9)], axis=0)
         X.append(np.concatenate((mean, std)))
         y.append(label)
@@ -264,7 +284,6 @@ def read_feature_par(base_dir, label, genre):
 
 def classify(data, labels, name, clf):
     predicted = cross_val_predict(clf, data, labels, cv=3)
-    print name
     cnf_matrix = confusion_matrix(labels, predicted)
     np.set_printoptions(precision=2)
     plt.figure()
@@ -291,9 +310,7 @@ def plot_confusion_matrix(cm, classes,
 
     if normalize:
         cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis] * 100
-        print("Normalized confusion matrix")
-    else:
-        print('Confusion matrix, without normalization')
+
 
     print(cm)
 
@@ -404,21 +421,22 @@ def create_feature(fn):
     sample_rate, X = read(fn)
     feature_extractor = FeatureExtractor()
     feature_extractor.set_models(models)
-    fft_features = feature_extractor.get(X, sample_rate, 1)
-    size = int(len(X) / sample_rate / 1)
-    frames = np.split(X[:size * sample_rate], size)
-    print fn + ' %i' % len(X)
-    ceps, mspec, spec = mfcc(X)
+    fft_features = feature_extractor.get(X, sample_rate, 0.5)
 
-    new_ceps = np.array([np.mean(x, axis=0) for x in np.split(ceps[:4110], size)])
+    size = int(len(X) / sample_rate / 0.5)
+    frames = np.split(X[:int(size * sample_rate * 0.5)], size)
+
+
     percusion_feature = []
+    cepstral_feature = []
     for i in frames:
-        percusion_feature.append(get_percusion_data(i[:16384]))
-    result = np.concatenate((fft_features, percusion_feature, new_ceps), axis=1)
+        percusion_feature.append(get_percusion_data(i[:int(16384 *0.5)]))
+        cepstral_feature.append(np.mean(mfcc(i)[0], axis=0))
+    result = np.concatenate((fft_features, percusion_feature, cepstral_feature), axis=1)
     base_fn, ext = os.path.splitext(fn)
     data_fn = base_fn + ".fft"
-    np.savetxt(data_fn, np.array(fft_features))
-    # print fn
+    np.savetxt(data_fn, np.array(result))
+    print fn
 
 
 import platform
@@ -430,39 +448,33 @@ if platform.system() == 'Windows':
     path = 'C:\\Users\\Pavel\\Downloads\\genres'
     path_to_wav = path + '\\*\\*.wav'
 else:
-    path = '/home/pavel/Documents/genres/'
+    path = '/home/pavel/Downloads/genres'
     path_to_wav = path + '/*/*.wav'
 
 
 if __name__ == '__main__':
     plt.interactive(False)
-    print platform.system()
     file_list = glob.glob(path_to_wav)
-    # Parallel(n_jobs=CPU_COUNT)(
-    #    delayed(create_feature)(wav_file) for wav_file in file_list
-    # )
-    #print 'create feature -- done'
+    Parallel(n_jobs=CPU_COUNT)(
+       delayed(create_feature)(wav_file) for wav_file in file_list
+    )
+    print 'create feature -- done'
 
-    # data = Parallel(n_jobs=CPU_COUNT) (
-    #    delayed(read_feature_par)(path, label, genre) for label, genre in enumerate(genre_list)
-    # )
 
-    # labels = np.array(map(lambda x : x[1], data)).flatten()
-    #data  = np.array(map(lambda x : x[0], data)).flatten()
-
+    np.set_printoptions(precision=10)
     data, labels = read_feature(genre_list, path)
+    print data.shape
     print 'read feature -- done'
+
+    data = np.array(data)
+
+    data = data.astype('float64')
+    data = np.nan_to_num(data)
+
     data = scale(data)
+    data = np.nan_to_num(data)
 
     Parallel(n_jobs=CPU_COUNT)(
-       delayed(classify)(data, labels, name, clf) for name, clf in zip(names, classifiers)
+        delayed(classify)(data, labels, name, clf) for name, clf in zip(names, classifiers)
     )
-    #clf = LinearRegression()
-    #clf.fit(data, labels)
-    #predicted = clf.predict(data)
-    #predicted = map(lambda x : 0 if x < 0 else x ,
-    #            np.around(predicted))
-    #mat = confusion_matrix(labels, predicted)
-    #plt.figure()
-    #plot_confusion_matrix(mat, classes=genre_list,
-    #i                      title='LinearRegression')
+
