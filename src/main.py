@@ -311,10 +311,6 @@ def plot_confusion_matrix(cm, classes,
 
 
 
-def write_ceps(ceps, fn):
-    base_fn, ext = os.path.splitext(fn)
-    data_fn = base_fn + '.ceps'
-    np.savetxt(data_fn, ceps)
 
 
 
@@ -371,7 +367,14 @@ def get_percusion_data(frame):
     else:
         ratioPeriod3 = 0
         amplitude3 = 0
-    return np.array([period0, amplitude0, ratioPeriod1, amplitude1, ratioPeriod2, amplitude2, ratioPeriod3, amplitude3])
+    return np.array([period0,
+                     amplitude0,
+                     ratioPeriod1,
+                     amplitude1,
+                     ratioPeriod2,
+                     amplitude2,
+                     ratioPeriod3,
+                     amplitude3])
 
 
 def create_feature(fn):
@@ -385,12 +388,26 @@ def create_feature(fn):
     cepstral_feature = []
     for i in frames:
         percusion_feature.append(get_percusion_data(i[:int(16384 * 1)]))
-        cepstral_feature.append(np.mean(np.nan_to_num(mfcc(i)[0]), axis=0))
+        cepstral_feature.append(np.mean(np.nan_to_num(mfcc(i, nwin=512, nfft=512, fs=sample_rate)[0]), axis=0))
     result = np.concatenate((fft_features, percusion_feature, cepstral_feature), axis=1)
     base_fn, ext = os.path.splitext(fn)
     data_fn = base_fn + ".fft"
     np.savetxt(data_fn, np.array(result))
     print fn
+
+import subprocess
+class ReadWavModule:
+
+    def create_wav(self, file_name):
+        format = '.au'
+        if not file_name.endswith(format):
+            raise EnvironmentError
+        bash_command = 'lame --decode '+ file_name + ' ' + file_name + '.wav'
+        print bash_command
+        subprocess.call(bash_command.split())
+        wav_file_name = bash_command.split()[-1]
+        return read(wav_file_name)
+
 
 
 import platform
@@ -409,23 +426,24 @@ else:
 if __name__ == '__main__':
     plt.interactive(False)
     np.set_printoptions(precision=10)
-    file_list = glob.glob(path_to_wav)
-    Parallel(n_jobs=CPU_COUNT)(
-       delayed(create_feature)(wav_file) for wav_file in file_list
-    )
-    print 'create feature -- done'
+    file_list = glob.glob(path + '/*/*.au')
+    #Parallel(n_jobs=CPU_COUNT)(
+    #   delayed(create_feature)(wav_file) for wav_file in file_list
+    #)
+    #print 'create feature -- done'
 
-    data, labels = read_feature(genre_list, path)
-    print data.shape
-    print 'read feature -- done'
-    data = np.nan_to_num(data)
-    data = scale(data)
-    data = np.nan_to_num(data)
-    print np.isinf(data).any()
-    print np.isnan(data).any()
+    #data, labels = read_feature(genre_list, path)
+    #print data.shape
+    #print 'read feature -- done'
+    #data = np.nan_to_num(data)
+    #data = scale(data)
+    #data = np.nan_to_num(data)
+    #print np.isinf(data).any()
+    #print np.isnan(data).any()
+    read_wav_module = ReadWavModule()
+    sample_rate, X = read_wav_module.create_wav(file_list[0])
 
-
-    Parallel(n_jobs=CPU_COUNT)(
-        delayed(classify)(data, labels, name, clf) for name, clf in zip(names, classifiers)
-    )
+    #Parallel(n_jobs=CPU_COUNT)(
+    #    delayed(classify)(data, labels, name, clf) for name, clf in zip(names, classifiers)
+    #)
 
