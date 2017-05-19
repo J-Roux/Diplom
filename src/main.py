@@ -5,7 +5,6 @@ import os
 
 import numpy as np
 import scipy
-from joblib import Parallel, delayed
 from scipy.io.wavfile import read
 
 CPU_COUNT = multiprocessing.cpu_count()
@@ -396,17 +395,65 @@ def create_feature(fn):
     print fn
 
 import subprocess
-class ReadWavModule:
 
-    def create_wav(self, file_name):
-        format = '.au'
-        if not file_name.endswith(format):
-            raise EnvironmentError
-        bash_command = 'lame --decode '+ file_name + ' ' + file_name + '.wav'
-        print bash_command
+
+class Track:
+    data = np.zeros((1))
+    sample_rate = 0
+    label = ''
+
+    def __init__(self, (sample_rate, data), label):
+        self.sample_rate = sample_rate
+        self.data = data
+        self.label = label
+
+class ReadWavModule:
+    @staticmethod
+    def __check_format(file_name, file_format):
+        # type: (str, str) -> None
+        if not file_name.endswith(file_format):
+            raise EnvironmentError('invalid file format')
+
+    def create_wav(self, file_name, file_format):
+        ReadWavModule.__check_format(file_name, file_format)
+        bash_command = 'lame --decode ' + file_name + ' ' + file_name + '.wav'
         subprocess.call(bash_command.split())
-        wav_file_name = bash_command.split()[-1]
-        return read(wav_file_name)
+
+    def read_wav(self, file_name, genre):
+        ReadWavModule.__check_format(file_name, 'wav')
+        return Track(read(file_name), genre)
+
+
+class PreprocessingModule:
+    def scale(self, track):
+        # type: (Track) -> Track
+        track.data = track.data.astype('float64')
+        track.data = scale(track.data, with_std=True, with_mean=True)
+        return track
+
+    def stereo_to_mono(self, track):
+        # type: (Track) -> Track
+        if len(track.data.shape) > 1:
+            track.data = np.mean(track.data, axis=0)
+        return track
+
+    def filter(self, track, alpha=0.99):
+        # type: (Track) -> Track
+        fltr = LowPassSinglePole(alpha)
+        filter = np.vectorize(lambda x: fltr.filter(x))
+        track.data = filter(track.data)
+        return track
+
+    def framing(self, track, frame_size_sec, overlap=0.5):
+        frame_size = frame_size_sec * track.sample_rate
+        data = track.data
+        results = []
+        iteration = int((1 - overlap) * frame_size)
+        stop = (int(len(data) / iteration) - 1) * iteration
+        for i in range(0, stop, iteration):
+            results.append(Track((track.sample_rate, data[i:i + frame_size]), track.label))
+        return results
+
 
 
 
@@ -441,7 +488,13 @@ if __name__ == '__main__':
     #print np.isinf(data).any()
     #print np.isnan(data).any()
     read_wav_module = ReadWavModule()
-    sample_rate, X = read_wav_module.create_wav(file_list[0])
+    preprocessing_module = PreprocessingModule()
+    print file_list[0]
+    track = read_wav_module.read_wav(file_list[0].replace("au", 'wav'), 'blues')
+    track = preprocessing_module.scale(track)
+    track = preprocessing_module.stereo_to_mono(track)
+    track = preprocessing_module.filter(track)
+    tracks = preprocessing_module.framing(track, 5)
 
     #Parallel(n_jobs=CPU_COUNT)(
     #    delayed(classify)(data, labels, name, clf) for name, clf in zip(names, classifiers)
