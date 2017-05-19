@@ -5,7 +5,6 @@ import os
 
 import numpy as np
 import scipy
-from scipy.io.wavfile import read
 
 CPU_COUNT = multiprocessing.cpu_count()
 
@@ -18,9 +17,8 @@ from sklearn.naive_bayes import GaussianNB
 from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 from sklearn.metrics import confusion_matrix
 from sklearn.model_selection import cross_val_predict
-from sklearn.preprocessing import scale
-from matplotlib import pyplot as plt
 
+from matplotlib import pyplot as plt
 
 import unittest
 from abc import ABCMeta, abstractmethod
@@ -97,29 +95,28 @@ class SpectralDissymmetry(FeatureExtractorModel, SpectralFeature):
 
 
 class LinearRegression(FeatureExtractorModel, SpectralFeature):
-    
     def get(self, data, params=None):
         Nb = len(data)
         F = np.arange(Nb)
         a = data
-        beta =( Nb * (F * a).sum() - F.sum() * a.sum()) / (Nb * np.power(F, 2).sum() - np.power(F, 2).sum())
+        beta = (Nb * (F * a).sum() - F.sum() * a.sum()) / (Nb * np.power(F, 2).sum() - np.power(F, 2).sum())
         return beta
 
-class Rolloff(FeatureExtractorModel, SpectralFeature):
 
+class Rolloff(FeatureExtractorModel, SpectralFeature):
     def get(self, data, params=None):
         partial_sum = 0.85 * data.sum()
         accumulator = 0.0
         R = 0
         for i in range(len(data)):
             accumulator += data[i]
-            if(accumulator >= partial_sum):
+            if accumulator >= partial_sum:
                 R = i
                 break
         return R
 
-class SFM(FeatureExtractorModel, SpectralFeature):
 
+class SFM(FeatureExtractorModel, SpectralFeature):
     def get(self, data, params=None):
         accumulator = 0.0
         for i in data:
@@ -127,10 +124,11 @@ class SFM(FeatureExtractorModel, SpectralFeature):
         accumulator = pow(accumulator, 1.1 / len(data))
         return accumulator / len(data) / data.sum()
 
-class SCF(FeatureExtractorModel, SpectralFeature):
 
+class SCF(FeatureExtractorModel, SpectralFeature):
     def get(self, data, params=None):
         return np.max(data) / len(data) / data.sum()
+
 
 class TestFeatureExtractor(unittest.TestCase):
     test_data = np.linspace(-np.pi * 100, np.pi * 100, 500)
@@ -166,7 +164,6 @@ class TestFeatureExtractor(unittest.TestCase):
 
 
 class FeatureExtractor:
-
     time_feature_models = {}
     spectre_feature_models = {}
     results = {}
@@ -185,14 +182,12 @@ class FeatureExtractor:
             for feature_extractor in filter(lambda x: len(extractors[x]) == i, extractors):
                 self.results[feature_extractor] = \
                     feature_extractor().get(data,
-                    map(lambda x: self.results[x] if x in self.results else None,
-                    extractors[feature_extractor]))
-
-
+                                            map(lambda x: self.results[x] if x in self.results else None,
+                                                extractors[feature_extractor]))
 
     def get(self, data, fs, frame_size_sec):
         data = scale(data)
-        size =  int(len(data) / fs / frame_size_sec)
+        size = int(len(data) / fs / frame_size_sec)
         frames = np.split(data[:int(size * fs * frame_size_sec)], size)
         results = []
         for frame in frames:
@@ -203,19 +198,18 @@ class FeatureExtractor:
         return np.array(results)
 
 
-
 models = {
-        Energy: [],
-        ZeroCrossingRate: [],
-        Autocorrelation: [],
-        SpectralCentroid: [],
+    Energy: [],
+    ZeroCrossingRate: [],
+    Autocorrelation: [],
+    SpectralCentroid: [],
     SpectralSmoothness: [],
     SpectralSpread: [SpectralCentroid],
-        SpectralDissymmetry: [SpectralCentroid],
-        Rolloff: [],
-        LinearRegression: [],
-        SFM: [],
-        SCF: []
+    SpectralDissymmetry: [SpectralCentroid],
+    Rolloff: [],
+    LinearRegression: [],
+    SFM: [],
+    SCF: []
 }
 
 genre_list = ['classical',
@@ -263,8 +257,6 @@ def read_feature(genre_list, base_dir):
     return np.array(X), np.array(Y)
 
 
-
-
 def classify(data, labels, name, clf):
     predicted = cross_val_predict(clf, data, labels, cv=10)
     cnf_matrix = confusion_matrix(labels, predicted)
@@ -272,8 +264,6 @@ def classify(data, labels, name, clf):
     plt.figure()
     plot_confusion_matrix(cnf_matrix, classes=genre_list, normalize=True,
                           title=name)
-
-
 
 
 def plot_confusion_matrix(cm, classes,
@@ -294,7 +284,6 @@ def plot_confusion_matrix(cm, classes,
     if normalize:
         cm = np.round(cm.astype('float') / cm.sum(axis=1)[:, np.newaxis] * 100).astype('int')
 
-
     print(cm)
 
     thresh = cm.max() / 2.
@@ -314,18 +303,9 @@ def plot_confusion_matrix(cm, classes,
 
 
 
-import pywt
-
- 
-class LowPassSinglePole:
-    def __init__(self, decay):
-        self.b = 1 - decay
-        self.y = 0
-    def filter(self, x):
-        self.y += self.b * (x - self.y)
-        return self.y
 
 import peakutils
+
 
 def get_percusion_data(frame):
     data = np.array(pywt.swt(frame, 'db4', level=4))
@@ -394,141 +374,15 @@ def create_feature(fn):
     np.savetxt(data_fn, np.array(result))
     print fn
 
-import subprocess
 
 
-class Track:
-    data = np.zeros((1))
-    sample_rate = 0
-    label = ''
 
-    def __init__(self, (sample_rate, data), label):
-        self.sample_rate = sample_rate
-        self.data = data
-        self.label = label
-
-class ReadWavModule:
-    @staticmethod
-    def __check_format(file_name, file_format):
-        # type: (str, str) -> None
-        if not file_name.endswith(file_format):
-            raise EnvironmentError('invalid file format')
-
-    def create_wav(self, file_name, file_format):
-        ReadWavModule.__check_format(file_name, file_format)
-        bash_command = 'lame --decode ' + file_name + ' ' + file_name + '.wav'
-        subprocess.call(bash_command.split())
-
-    def read_wav(self, file_name, genre):
-        ReadWavModule.__check_format(file_name, 'wav')
-        return Track(read(file_name), genre)
-
-
-class PreprocessingModule:
-
-    def scale(self, track):
-        # type: (Track) -> Track
-        track.data = track.data.astype('float64')
-        track.data = scale(track.data, with_std=True, with_mean=True)
-        return track
-
-    def stereo_to_mono(self, track):
-        # type: (Track) -> Track
-        if len(track.data.shape) > 1:
-            track.data = np.mean(track.data, axis=0)
-        return track
-
-    def filter(self, track, alpha=0.99):
-        # type: (Track) -> Track
-        fltr = LowPassSinglePole(alpha)
-        filter = np.vectorize(lambda x: fltr.filter(x))
-        track.data = filter(track.data)
-        return track
-
-    def framing(self, track, frame_size_sec, overlap=0.5):
-        # type: (Track, int, float) -> [Track]
-        frame_size = frame_size_sec * track.sample_rate
-        data = track.data
-        results = []
-        iteration = int((1 - overlap) * frame_size)
-        stop = (int(len(data) / iteration) - 1) * iteration
-        for i in range(0, stop, iteration):
-            results.append(Track((track.sample_rate, data[i:i + frame_size]), track.label))
-        return results
 
 from scipy import signal
 
-class SpectralTrack(Track):
-    spectral_data = []
-
-    def __init__(self, track, spectral_data):
-        self.sample_rate = track.sample_rate
-        self.label = track.label
-        self.data = track.data
-        self.spectral_data = spectral_data
-
-
-
-
-
-class SpectralTransformer:
-
-    def short_time_fourier(self, track, window=signal.hamming(1024)):
-        #type : (Track, list) -> ndarray
-        result = SpectralTrack(track,
-                               np.abs(signal.stft(track.data,
-                                           track.sample_rate,
-                                           window))
-                               )
-
-        return result
-
-    def wavelet_daubechies(self, data):
-        data = np.array(pywt.swt(data, 'db4', level=4))
-        data = np.array([np.sqrt(np.power(i[0], 2) + np.power(i[1], 2)) for i in data])
-        data = data.reshape(4, data.shape[-1])
-        return data
-
-    def round_to_power_of_two(self, data):
-        size = len(data)
-        new_size = 1 <<(size - 1).bit_length()
-        return data[:new_size]
-
-    def low_pass_filter(self, data, decay=0.99):
-        fltr = LowPassSinglePole(decay)
-        result = []
-        for i in data:
-            result.append(fltr.filter(i))
-        return np.array(result)
-
-    def resampling(self, data, rate=16):
-        return data[::rate]
-
-    def normalize_and_sum(self, data):
-        accumulator = np.array([])
-        for i in data:
-            accumulator += scale(i, with_mean=True, with_std=False)
-        return accumulator
-
-    def autocorrelation(self, data):
-        data = scipy.fft(data)
-        data = np.abs(scipy.ifft(data * data)) / len(data) / 4
-        return data
-
-    def percussion_correlogramm(self, track):
-        data = self.round_to_power_of_two(track.data)
-        data = self.wavelet_daubechies(data)
-        results = []
-        for i in data:
-            filtered = self.low_pass_filter(i)
-            resampled = self.resampling(filtered)
-            results.append(resampled)
-        data = self.normalize_and_sum(results)
-        return data
-
-
-
-
+from read_wav_module import WavModule
+from preprocessing_module import PreprocessingModule
+from spectral_transform import SpectralTransformer
 import platform
 
 path = ''
@@ -541,36 +395,37 @@ else:
     path = '/home/pavel/Downloads/genres'
     path_to_wav = path + '/*/*.wav'
 
-
 if __name__ == '__main__':
     plt.interactive(False)
     np.set_printoptions(precision=10)
     file_list = glob.glob(path + '/*/*.au')
-    #Parallel(n_jobs=CPU_COUNT)(
+    # Parallel(n_jobs=CPU_COUNT)(
     #   delayed(create_feature)(wav_file) for wav_file in file_list
-    #)
-    #print 'create feature -- done'
+    # )
+    # print 'create feature -- done'
 
-    #data, labels = read_feature(genre_list, path)
-    #print data.shape
-    #print 'read feature -- done'
-    #data = np.nan_to_num(data)
-    #data = scale(data)
-    #data = np.nan_to_num(data)
-    #print np.isinf(data).any()
-    #print np.isnan(data).any()
-    read_wav_module = ReadWavModule()
-    preprocessing_module = PreprocessingModule()
-    spectral_transformer = SpectralTransformer()
+    # data, labels = read_feature(genre_list, path)
+    # print data.shape
+    # print 'read feature -- done'
+    # data = np.nan_to_num(data)
+    # data = scale(data)
+    # data = np.nan_to_num(data)
+    # print np.isinf(data).any()
+    # print np.isnan(data).any()
+    read_wav_module = WavModule()
+    preprocessing_module = PreprocessingModule(alpha=0.99, cut_end=0.1, cut_start=0.1, overlap=0.5)
+    spectral_transformer = SpectralTransformer(decay=0.99, level=4, rate=16, window=signal.hamming(1024))
     print file_list[0]
     track = read_wav_module.read_wav(file_list[0].replace("au", 'wav'), 'blues')
+    track = preprocessing_module.cutting(track)
     track = preprocessing_module.scale(track)
     track = preprocessing_module.stereo_to_mono(track)
-    track = preprocessing_module.filter(track)
+    # track = preprocessing_module.filter(track)
     tracks = preprocessing_module.framing(track, 5)
-    #plt.plot(spectral_transformer.short_time_fourier(tracks[0]))
-   # plt.show()
-    #Parallel(n_jobs=CPU_COUNT)(
+    spectral = spectral_transformer.short_time_fourier(track)
+    percussion = spectral_transformer.percussion_correlogramm(track)
+    plt.plot(percussion)
+    plt.show()
+    # Parallel(n_jobs=CPU_COUNT)(
     #    delayed(classify)(data, labels, name, clf) for name, clf in zip(names, classifiers)
-    #)
-
+    # )
