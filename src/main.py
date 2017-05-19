@@ -425,6 +425,7 @@ class ReadWavModule:
 
 
 class PreprocessingModule:
+
     def scale(self, track):
         # type: (Track) -> Track
         track.data = track.data.astype('float64')
@@ -445,6 +446,7 @@ class PreprocessingModule:
         return track
 
     def framing(self, track, frame_size_sec, overlap=0.5):
+        # type: (Track, int, float) -> [Track]
         frame_size = frame_size_sec * track.sample_rate
         data = track.data
         results = []
@@ -453,6 +455,76 @@ class PreprocessingModule:
         for i in range(0, stop, iteration):
             results.append(Track((track.sample_rate, data[i:i + frame_size]), track.label))
         return results
+
+from scipy import signal
+
+class SpectralTrack(Track):
+    spectral_data = []
+
+    def __init__(self, track, spectral_data):
+        self.sample_rate = track.sample_rate
+        self.label = track.label
+        self.data = track.data
+        self.spectral_data = spectral_data
+
+
+
+
+
+class SpectralTransformer:
+
+    def short_time_fourier(self, track, window=signal.hamming(1024)):
+        #type : (Track, list) -> ndarray
+        result = SpectralTrack(track,
+                               np.abs(signal.stft(track.data,
+                                           track.sample_rate,
+                                           window))
+                               )
+
+        return result
+
+    def wavelet_daubechies(self, data):
+        data = np.array(pywt.swt(data, 'db4', level=4))
+        data = np.array([np.sqrt(np.power(i[0], 2) + np.power(i[1], 2)) for i in data])
+        data = data.reshape(4, data.shape[-1])
+        return data
+
+    def round_to_power_of_two(self, data):
+        size = len(data)
+        new_size = 1 <<(size - 1).bit_length()
+        return data[:new_size]
+
+    def low_pass_filter(self, data, decay=0.99):
+        fltr = LowPassSinglePole(decay)
+        result = []
+        for i in data:
+            result.append(fltr.filter(i))
+        return np.array(result)
+
+    def resampling(self, data, rate=16):
+        return data[::rate]
+
+    def normalize_and_sum(self, data):
+        accumulator = np.array([])
+        for i in data:
+            accumulator += scale(i, with_mean=True, with_std=False)
+        return accumulator
+
+    def autocorrelation(self, data):
+        data = scipy.fft(data)
+        data = np.abs(scipy.ifft(data * data)) / len(data) / 4
+        return data
+
+    def percussion_correlogramm(self, track):
+        data = self.round_to_power_of_two(track.data)
+        data = self.wavelet_daubechies(data)
+        results = []
+        for i in data:
+            filtered = self.low_pass_filter(i)
+            resampled = self.resampling(filtered)
+            results.append(resampled)
+        data = self.normalize_and_sum(results)
+        return data
 
 
 
@@ -489,13 +561,15 @@ if __name__ == '__main__':
     #print np.isnan(data).any()
     read_wav_module = ReadWavModule()
     preprocessing_module = PreprocessingModule()
+    spectral_transformer = SpectralTransformer()
     print file_list[0]
     track = read_wav_module.read_wav(file_list[0].replace("au", 'wav'), 'blues')
     track = preprocessing_module.scale(track)
     track = preprocessing_module.stereo_to_mono(track)
     track = preprocessing_module.filter(track)
     tracks = preprocessing_module.framing(track, 5)
-
+    #plt.plot(spectral_transformer.short_time_fourier(tracks[0]))
+   # plt.show()
     #Parallel(n_jobs=CPU_COUNT)(
     #    delayed(classify)(data, labels, name, clf) for name, clf in zip(names, classifiers)
     #)
