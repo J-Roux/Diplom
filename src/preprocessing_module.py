@@ -19,12 +19,14 @@ class PreprocessingModule:
     overlap = 0.0
     cut_start = 0.0
     cut_end = 0.0
+    frame_size_sec = 0
 
-    def __init__(self, alpha, overlap, cut_start, cut_end):
+    def __init__(self, alpha, overlap, cut_start, cut_end, frame_size_sec):
         self.alpha = alpha
         self.overlap = overlap
         self.cut_end = cut_end
         self.cut_start = cut_start
+        self.frame_size_sec = frame_size_sec
 
     def scale(self, track):
         # type: (Track) -> Track
@@ -45,9 +47,9 @@ class PreprocessingModule:
         track.data = filter(track.data)
         return track
 
-    def framing(self, track, frame_size_sec):
+    def framing(self, track):
         # type: (Track, int, float) -> [Track]
-        frame_size = frame_size_sec * track.sample_rate
+        frame_size = self.frame_size_sec * track.sample_rate
         data = track.data
         results = []
         iteration = int((1 - self.overlap) * frame_size)

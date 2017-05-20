@@ -10,12 +10,14 @@ from track import Track
 
 class SpectralTrack(Track):
     spectral_data = []
+    percussion_data = []
 
-    def __init__(self, track, spectral_data):
+    def __init__(self, track, spectral_data, percussion_data):
         self.sample_rate = track.sample_rate
         self.label = track.label
         self.data = track.data
         self.spectral_data = spectral_data
+        self.percussion_data = percussion_data
 
 
 class SpectralTransformer:
@@ -35,8 +37,8 @@ class SpectralTransformer:
         f, t, Zxx = signal.stft(track.data,
                                 window=self.window,
                                 nperseg=len(self.window))
-        result = SpectralTrack(track, np.abs(Zxx))
-        return result
+        return np.abs(Zxx)
+
 
     def wavelet_daubechies(self, data):
         data = np.array(pywt.swt(data, 'db4', level=self.level))
@@ -81,3 +83,4 @@ class SpectralTransformer:
             results.append(resampled)
         data = self.normalize_and_sum(results)
         return data
+

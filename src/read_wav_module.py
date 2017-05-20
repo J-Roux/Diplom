@@ -12,10 +12,10 @@ class WavModule:
         if not file_name.endswith(file_format):
             raise EnvironmentError('invalid file format')
 
-    def create_wav(self, file_name, file_format):
-        WavModule.__check_format(file_name, file_format)
+    def create_wav(self, file_name):
         bash_command = 'lame --decode ' + file_name + ' ' + file_name + '.wav'
-        subprocess.call(bash_command.split())
+        if subprocess.call(bash_command.split()) != 0:
+            raise EnvironmentError('no lame detected')
 
     def read_wav(self, file_name, genre):
         WavModule.__check_format(file_name, 'wav')
