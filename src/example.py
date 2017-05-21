@@ -2,6 +2,7 @@ import glob
 import multiprocessing
 import os
 
+from sklearn.decomposition import PCA
 from sklearn.preprocessing import scale
 
 from genre_classification_module import GenreClassificationModule
@@ -66,7 +67,7 @@ if __name__ == '__main__':
     module = GenreClassificationModule(cv=10, labels_name=genre_list)
     plt.interactive(False)
     np.set_printoptions(precision=10)
-    extract_and_save()
+    # extract_and_save()
     X, Y = load_data()
     result = module.classify(X, Y)
     for i in result:

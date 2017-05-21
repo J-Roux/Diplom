@@ -1,13 +1,15 @@
 from collections import Counter
 
+
 import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
-
+from mpl_toolkits.mplot3d import Axes3D
 
 class VisualizeDataModule:
+
     def dimension_reduction(self, data, n_component, reduction_method):
         if reduction_method == 't_sne':
             model = TSNE(n_components=n_component, random_state=0)
@@ -40,6 +42,7 @@ class VisualizeDataModule:
                    loc='lower left',
                    ncol=3,
                    fontsize=8)
+        plt.savefig('2d.pdf')
         if show:
             plt.show()
 
@@ -64,5 +67,8 @@ class VisualizeDataModule:
         ax.set_xlabel('X Label')
         ax.set_ylabel('Y Label')
         ax.set_zlabel('Z Label')
+
+        plt.savefig('3d.pdf')
         if show:
             plt.show()
+

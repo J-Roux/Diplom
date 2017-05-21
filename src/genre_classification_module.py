@@ -29,9 +29,9 @@ def classify_p(clf, clf_name, data, labels, cv):
 clf = {
     'Nearest Neighbors': KNeighborsClassifier(3),
     'Linear SVM': SVC(kernel="linear", C=0.025),
-    'Decision Tree': DecisionTreeClassifier(max_depth=5),
-    'Random Forest': RandomForestClassifier(max_depth=5, n_estimators=10, max_features=1),
-    'Neural Net': MLPClassifier(alpha=1),
+    'Decision Tree': DecisionTreeClassifier(),
+    'Random Forest': RandomForestClassifier(n_estimators=10, max_features=1),
+    'Neural Net': MLPClassifier(hidden_layer_sizes=(1000,), alpha=1),
     'AdaBoost': AdaBoostClassifier(),
     'Gaussian Naive Bayes': GaussianNB(),
     'QDA': QuadraticDiscriminantAnalysis()

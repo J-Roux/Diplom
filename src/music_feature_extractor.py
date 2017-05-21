@@ -31,9 +31,9 @@ class MusicFeatureExtractor:
                                                level=4,
                                                rate=16,
                                                window=signal.hamming(1024))
-    feature_extractor = FeatureExtractorModule(models=models, nceps=16)
-    feature_processing = FeatureProcessing(with_kurtosis=False,
-                                           with_skew=False)
+    feature_extractor = FeatureExtractorModule(models=models, nceps=24)
+    feature_processing = FeatureProcessing(with_kurtosis=True,
+                                           with_skew=True)
     read_wav_module = WavModule()
 
     def __int__(self,
@@ -47,9 +47,9 @@ class MusicFeatureExtractor:
                                                          level=4,
                                                          rate=16,
                                                          window=signal.hamming(1024)),
-                feature_extractor=FeatureExtractorModule(models=models, nceps=16),
-                feature_processing=FeatureProcessing(with_kurtosis=False,
-                                                     with_skew=False)):
+                feature_extractor=FeatureExtractorModule(models=models, nceps=24),
+                feature_processing=FeatureProcessing(with_kurtosis=True,
+                                                     with_skew=True)):
 
         self.read_wav_module = read_wav_module
         self.preprocessing_module = preprocessing_module
@@ -63,9 +63,9 @@ class MusicFeatureExtractor:
         return self.read_wav_module.read_wav(file_name, label)
 
     def preprocessing(self, track):
+        track = self.preprocessing_module.stereo_to_mono(track)
         track = self.preprocessing_module.cutting(track)
         track = self.preprocessing_module.scale(track)
-        track = self.preprocessing_module.stereo_to_mono(track)
         track = self.preprocessing_module.filter(track)
         return self.preprocessing_module.framing(track)
 

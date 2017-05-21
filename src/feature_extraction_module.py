@@ -139,6 +139,7 @@ class FeatureExtractorModule:
     spectre_feature_models = {}
     results = {}
     nceps = 0
+    frame_size = 512
 
     def extract_feature(self, track):
         # type :(SpectralTrack)
@@ -153,6 +154,7 @@ class FeatureExtractorModule:
                           mfcc_feature=mfcc_feature)
 
     def extract_percussion_feature(self, track):
+
         indexes = peakutils.indexes(track.percussion_data,
                                     thres=0.2 / max(track.percussion_data),
                                     min_dist=10)
@@ -199,9 +201,14 @@ class FeatureExtractorModule:
         return np.array(result)
 
     def extract_timing_feature(self, track):
-        self.eval_models(self.time_feature_models, track.data)
-        keys = filter(lambda x: issubclass(x, TimeFeature), self.results)
-        return np.array([self.results[key] for key in keys])
+        n_fragments = int(len(track.data) / self.frame_size)
+        temp = np.split(track.data[:n_fragments * self.frame_size], n_fragments)
+        result = []
+        for i in temp:
+            self.eval_models(self.time_feature_models, i)
+            keys = filter(lambda x: issubclass(x, TimeFeature), self.results)
+            result.append(np.array([self.results[key] for key in keys]))
+        return np.array(result)
 
     def eval_models(self, extractors, data):
         for i in range(np.amax(map(lambda x: len(x), extractors.values())) + 1):
