@@ -20,40 +20,40 @@ class FeatureExtractorModel:
         return result / float(len(data))
 
 
-class SpectralFeature:
-    __metaclass__ = ABCMeta
+class SpectralFeature(FeatureExtractorModel):
+    pass
 
 
-class TimeFeature:
-    __metaclass__ = ABCMeta
+class TimeFeature(FeatureExtractorModel):
+    pass
 
 
-class ZeroCrossingRate(FeatureExtractorModel, TimeFeature):
+class ZeroCrossingRate(TimeFeature):
     def get(self, data, params=None):
         self.check(data)
         return self.normalize(((data[:-1] * data[1:]) < 0).sum(), data)
 
 
-class Energy(FeatureExtractorModel, TimeFeature):
+class Energy(TimeFeature):
     def get(self, data, params=None):
         self.check(data)
         return self.normalize(np.sum(np.power(data, 2)), data)
 
 
-class Autocorrelation(FeatureExtractorModel, TimeFeature):
+class Autocorrelation(TimeFeature):
     def get(self, data, params=None):
         self.check(data)
         return self.normalize((data[:-1] * data[1:]).sum(), data)
 
 
-class SpectralCentroid(FeatureExtractorModel, SpectralFeature):
+class SpectralCentroid(SpectralFeature):
     def get(self, data, params=None):
         self.check(data)
         data = np.abs(data)
         return (data * np.arange(len(data))).sum() / float(data.sum())
 
 
-class SpectralSmoothness(FeatureExtractorModel, SpectralFeature):
+class SpectralSmoothness(SpectralFeature):
     def get(self, data, params=None):
         self.check(data)
         data = np.abs(data)
@@ -61,21 +61,21 @@ class SpectralSmoothness(FeatureExtractorModel, SpectralFeature):
         return (2 * data[1:-1] - data[:-2] - data[2:]).sum() / 3
 
 
-class SpectralSpread(FeatureExtractorModel, SpectralFeature):
+class SpectralSpread(SpectralFeature):
     def get(self, data, params=None):
         data = np.abs(data)
         spectral_centroid = params[0]
         return np.sqrt((np.power(np.arange(len(data)) - spectral_centroid, 2) * data).sum() / data.sum())
 
 
-class SpectralDissymmetry(FeatureExtractorModel, SpectralFeature):
+class SpectralDissymmetry(SpectralFeature):
     def get(self, data, params=None):
         data = np.abs(data)
         spectral_centroid = params[0]
         return np.sqrt(np.abs((np.power(np.arange(len(data)) - spectral_centroid, 3) * data).sum() / data.sum()))
 
 
-class LinearRegression(FeatureExtractorModel, SpectralFeature):
+class LinearRegression(SpectralFeature):
     def get(self, data, params=None):
         Nb = len(data)
         F = np.arange(Nb)
@@ -84,7 +84,7 @@ class LinearRegression(FeatureExtractorModel, SpectralFeature):
         return beta
 
 
-class Rolloff(FeatureExtractorModel, SpectralFeature):
+class Rolloff(SpectralFeature):
     def get(self, data, params=None):
         partial_sum = 0.85 * data.sum()
         accumulator = 0.0
@@ -97,7 +97,7 @@ class Rolloff(FeatureExtractorModel, SpectralFeature):
         return R
 
 
-class SFM(FeatureExtractorModel, SpectralFeature):
+class SFM(SpectralFeature):
     def get(self, data, params=None):
         accumulator = 0.0
         for i in data:
@@ -106,35 +106,35 @@ class SFM(FeatureExtractorModel, SpectralFeature):
         return accumulator / len(data) / data.sum()
 
 
-class SCF(FeatureExtractorModel, SpectralFeature):
+class SCF(SpectralFeature):
     def get(self, data, params=None):
         return np.max(data) / len(data) / data.sum()
 
 
 class TrackModel:
     label = ''
-    timing_feature = []
-    spectral_feature = []
-    percussion_feature = []
-    mfcc_feature = []
+    timing_features = []
+    spectral_features = []
+    percussion_features = []
+    mfcc_features = []
 
     def __init__(self, label, timing_feature, spectral_feature, percussion_feature, mfcc_feature):
         self.label = label
-        self.timing_feature = timing_feature
-        self.spectral_feature = spectral_feature
-        self.percussion_feature = percussion_feature
-        self.mfcc_feature = mfcc_feature
+        self.timing_features = timing_feature
+        self.spectral_features = spectral_feature
+        self.percussion_features = percussion_feature
+        self.mfcc_features = mfcc_feature
 
     def to_vector(self):
         return np.concatenate((
-            self.timing_feature,
-            self.spectral_feature,
-            self.percussion_feature,
-            self.mfcc_feature
+            self.timing_features,
+            self.spectral_features,
+            self.percussion_features,
+            self.mfcc_features
         ))
 
 
-class FeatureExtractorModule:
+class FeatureExtractor:
     time_feature_models = {}
     spectre_feature_models = {}
     results = {}

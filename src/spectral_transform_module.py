@@ -23,13 +23,13 @@ class SpectralTrack(Track):
 class SpectralTransformer:
     window = signal.hamming(1024)
     level = 4
-    decay = 0.99
+    alpha = 0.99
     rate = 16
 
-    def __init__(self, window, level, decay, rate):
+    def __init__(self, window, level, alpha, rate):
         self.window = window
         self.level = level
-        self.decay = decay
+        self.alpha = alpha
         self.rate = rate
 
     def short_time_fourier(self, track):
@@ -52,7 +52,7 @@ class SpectralTransformer:
         return data[:new_size]
 
     def low_pass_filter(self, data):
-        fltr = LowPassSinglePole(self.decay)
+        fltr = LowPassSinglePole(self.alpha)
         result = []
         for i in data:
             result.append(fltr.filter(i))

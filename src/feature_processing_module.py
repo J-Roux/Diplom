@@ -27,9 +27,9 @@ class FeatureProcessing:
         return kurtosis(data, axis=0)
 
     def process_feature(self, track):
-        mfcc_feature = track.mfcc_feature
-        spectral_feature = track.spectral_feature
-        timing_feature = track.timing_feature
+        mfcc_feature = track.mfcc_features
+        spectral_feature = track.spectral_features
+        timing_feature = track.timing_features
         result_timing_feature = []
         result_mfcc_feature = []
         result_spectral_feature = []
@@ -61,8 +61,8 @@ class FeatureProcessing:
             result_mfcc_feature = np.concatenate((result_mfcc_feature, skew_mfcc))
             result_spectral_feature = np.concatenate((result_spectral_feature, skew_spectral))
             result_timing_feature = np.concatenate((result_timing_feature, skew_timing))
-        track.mfcc_feature = np.nan_to_num(result_mfcc_feature)
-        track.spectral_feature = np.nan_to_num(result_spectral_feature)
-        track.timing_feature = np.nan_to_num(result_timing_feature)
-        track.percussion_feature = np.nan_to_num(track.percussion_feature)
+        track.mfcc_features = np.nan_to_num(result_mfcc_feature)
+        track.spectral_features = np.nan_to_num(result_spectral_feature)
+        track.timing_features = np.nan_to_num(result_timing_feature)
+        track.percussion_features = np.nan_to_num(track.percussion_features)
         return track

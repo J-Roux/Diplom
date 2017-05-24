@@ -6,7 +6,7 @@ from sklearn.decomposition import PCA
 from sklearn.preprocessing import scale
 
 from genre_classification_module import GenreClassificationModule
-from music_feature_extractor import MusicFeatureExtractor
+from music_feature_extractor import MainModule
 from visualizer_data_module import VisualizeDataModule
 
 CPU_COUNT = multiprocessing.cpu_count()
@@ -41,7 +41,7 @@ else:
 def extract_and_save():
     X = []
     Y = []
-    mfe = MusicFeatureExtractor()
+    mfe = MainModule()
     for label, genre in enumerate(genre_list):
         genre_dir = os.path.join(path, genre, "*.wav")
         for fn in glob.glob(genre_dir):
@@ -67,8 +67,9 @@ if __name__ == '__main__':
     module = GenreClassificationModule(cv=10, labels_name=genre_list)
     plt.interactive(False)
     np.set_printoptions(precision=10)
-    # extract_and_save()
+    extract_and_save()
     X, Y = load_data()
+
     result = module.classify(X, Y)
     for i in result:
         print i + '  ' + str(result[i][0])

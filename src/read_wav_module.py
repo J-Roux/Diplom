@@ -13,7 +13,7 @@ class WavModule:
             raise EnvironmentError('invalid file format')
 
     def create_wav(self, file_name):
-        bash_command = 'lame --decode ' + file_name + ' ' + file_name + '.wav'
+        bash_command = ['lame', '--decode', file_name, file_name, '.wav']
         if subprocess.call(bash_command.split()) != 0:
             raise EnvironmentError('no lame detected')
 

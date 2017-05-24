@@ -21,34 +21,34 @@ models = {
 }
 
 
-class MusicFeatureExtractor:
+class MainModule:
     preprocessing_module = PreprocessingModule(alpha=0.99,
                                                cut_end=0.2,
                                                cut_start=0.2,
                                                overlap=0.1,
                                                frame_size_sec=5)
-    spectral_transformer = SpectralTransformer(decay=0.99,
+    spectral_transformer = SpectralTransformer(alpha=0.99,
                                                level=4,
                                                rate=16,
                                                window=signal.hamming(1024))
-    feature_extractor = FeatureExtractorModule(models=models, nceps=24)
+    feature_extractor = FeatureExtractor(models=models, nceps=24)
     feature_processing = FeatureProcessing(with_kurtosis=True,
                                            with_skew=True)
     read_wav_module = WavModule()
 
-    def __int__(self,
-                read_wav_module=WavModule(),
-                preprocessing_module=PreprocessingModule(alpha=0.99,
+    def __init__(self,
+                 read_wav_module=WavModule(),
+                 preprocessing_module=PreprocessingModule(alpha=0.99,
                                                          cut_end=0.2,
                                                          cut_start=0.2,
                                                          overlap=0.1,
                                                          frame_size_sec=5),
-                spectral_transformer=SpectralTransformer(decay=0.99,
-                                                         level=4,
-                                                         rate=16,
-                                                         window=signal.hamming(1024)),
-                feature_extractor=FeatureExtractorModule(models=models, nceps=24),
-                feature_processing=FeatureProcessing(with_kurtosis=True,
+                 spectral_transformer=SpectralTransformer(alpha=0.99,
+                                                          level=4,
+                                                          rate=16,
+                                                          window=signal.hamming(1024)),
+                 feature_extractor=FeatureExtractor(models=models, nceps=24),
+                 feature_processing=FeatureProcessing(with_kurtosis=True,
                                                      with_skew=True)):
 
         self.read_wav_module = read_wav_module
@@ -82,7 +82,7 @@ class MusicFeatureExtractor:
     def extract(self, tracks):
         return map(lambda x: self.feature_extractor.extract_feature(x), tracks)
 
-    def post_processing(self, tracks):
+    def postprocessing(self, tracks):
         return map(lambda x: self.feature_processing.process_feature(x), tracks)
 
     def get_feature(self, file_name, label):
@@ -90,5 +90,5 @@ class MusicFeatureExtractor:
         tracks = self.preprocessing(track)
         tracks = self.tranform(tracks)
         tracks = self.extract(tracks)
-        tracks = self.post_processing(tracks)
+        tracks = self.postprocessing(tracks)
         return tracks
