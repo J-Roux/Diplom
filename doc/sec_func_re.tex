@@ -96,4 +96,16 @@ s_{t} + \alpha * (c_t - s_{t-1}), & t > 0
 \item{\texttt{framing(track)} -- метод, который нарезает трека на фрагменты длинной заданной полем \texttt{frame_size_sec} и перекрытием заданным полем \texttt{overlap}.
 \end{itemize}
 
+\subsubsection{Класс \texttt{SpectralTransformer}}
+
+Класс \texttt{SpectralTransformer} предназначен для получения спектрально-временного представления трека, а также для получения коррелограммы. Спектрально-временное представление получается путём оконного преобразования Фурье (см. формулу \ref{eq:stft}) с окном Хемминга размером 10 миллисекунд (см. формулу \ref{eq:stft})
+
+\begin{equation}\label{eq:stft}
+F(m,\omega) = \sum_{n=-\infty}^{\infty} f[n]w[n-m]e^{-j \omega n} 
+\end{cases} 
+\end{equation}
+\begin{equation}\label{eq:stft}
+{\begin{aligned}w_{0}(n)\ &{\stackrel {\mathrm {def} }{=}}\ w(n+{\begin{matrix}{\frac {N-1}{2}}\end{matrix}})\\&=0.54+0.46\;\cos \left({\frac {2\pi n}{N-1}}\right)\end{aligned}}
+\end{cases} 
+\end{equation}
 
