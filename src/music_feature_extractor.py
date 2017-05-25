@@ -22,7 +22,7 @@ models = {
 
 
 class MainModule:
-    preprocessing_module = PreprocessingModule(alpha=0.99,
+    preprocessing_module = PreprocessingModule(alpha=0.01,
                                                cut_end=0.2,
                                                cut_start=0.2,
                                                overlap=0.1,
@@ -38,7 +38,7 @@ class MainModule:
 
     def __init__(self,
                  read_wav_module=WavModule(),
-                 preprocessing_module=PreprocessingModule(alpha=0.99,
+                 preprocessing_module=PreprocessingModule(alpha=0.01,
                                                          cut_end=0.2,
                                                          cut_start=0.2,
                                                          overlap=0.1,
