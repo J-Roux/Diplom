@@ -51,7 +51,7 @@ class SpectralTransformer:
         new_size = 2 ** (size.bit_length() - 1)
         return data[:new_size]
 
-    def low_pass_filter(self, data):
+    def filter(self, data):
         fltr = LowPassSinglePole(self.alpha)
         result = []
         for i in data:
@@ -78,7 +78,7 @@ class SpectralTransformer:
         data = self.wavelet_daubechies(data)
         results = []
         for i in data:
-            filtered = self.low_pass_filter(i)
+            filtered = self.filter(i)
             resampled = self.resampling(filtered)
             results.append(resampled)
         data = self.normalize_and_sum(results)

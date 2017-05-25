@@ -65,8 +65,8 @@
 Класс \texttt{WavModule} имеет следующие методы:
 
 \begin{itemize}
-\item{\texttt{create_wav(file_name)} -- процедура, которая принимает на вход путь к MP3-файлу и с помошью стандартной библиотеки Python вызывает либо bash-скрипт в случае запуска в операционной системе Linux, либо batch-скрипт в случае запуска в операционной системе Windows, который использует консольное приложение Lame для преобразования MP3-файла в WAV формат}
-\item{\texttt{read_wav(filename, label)} -- метод, который считывает файл формата WAV и сохраняет данные в класс \texttt{Track}}
+\item{ \texttt{create\_wav(file\_name)}  процедура, которая принимает на вход путь к MP3-файлу и с помошью стандартной библиотеки Python вызывает либо bash-скрипт в случае запуска в операционной системе Linux, либо batch-скрипт в случае запуска в операционной системе Windows, который использует консольное приложение Lame для преобразования MP3-файла в WAV формат}
+\item{ \texttt{read\_wav(filename, label)} - метод, который считывает файл формата WAV и сохраняет данные в класс \texttt{Track}}
 \end{itemize}
 
 \subsubsection{Класс \texttt{PreprocessingModule}}
@@ -79,11 +79,11 @@
 \begin{itemize}
 \item{Поле \texttt{alpha} -- коэффициент сглаживания, который может принимать значения от 0 до 1.}
 \item{Поле \texttt{overlap} -- процент пересечения фрагментов.}
-\item{Поле \texttt{cut_start} -- процент отсечения трека с начала трека}
-\item{Поле \texttt{cut_end} -- процент отсечения трека с конца трека}
-\item{Поле \texttt{frame_size_sec} -- размер фрагментов в секундах}
-\item{\texttt{stereo_to_mono(track)} -- метод, который преобразует стерео звук к моно с помощью чередования правого и левого канала}
-\item{\texttt{scale(track)} -- метод, который нормализует данные по МО и СКО
+\item{Поле \texttt{cut\_start} -- процент отсечения трека с начала трека}
+\item{Поле \texttt{cut\_end} -- процент отсечения трека с конца трека}
+\item{Поле \texttt{frame\_size\_sec} -- размер фрагментов в секундах}
+\item{\texttt{stereo\_to\_mono(track)} -- метод, который преобразует стерео звук к моно с помощью чередования правого и левого канала}
+\item{\texttt{scale(track)} -- метод, который нормализует данные по МО и СКО}
 \item{\texttt{filter(track)} -- метод, который преобразовывает данные искользуя экспоненциальное сглаживание:
 \begin{equation}\label{eq:sfm}
 s_t = \begin{cases} 
@@ -91,21 +91,35 @@ c_1, & t_1 = 0. \\
 s_{t} + \alpha * (c_t - s_{t-1}), & t > 0
 \end{cases} 
 \end{equation}
-где - $\alpha$ - коэффициент сглаживание заданные в поле \texttt{alpha}
-\item{\texttt{cutting(track)} -- метод, который отсекает процент данных трека с начала и конца, который задаётся полями \texttt{cut_start} и \texttt{cut_end}
-\item{\texttt{framing(track)} -- метод, который нарезает трека на фрагменты длинной заданной полем \texttt{frame_size_sec} и перекрытием заданным полем \texttt{overlap}.
+где - $\alpha$ - коэффициент сглаживание заданные в поле \texttt{alpha}}
+\item{\texttt{cutting(track)} -- метод, который отсекает процент данных трека с начала и конца, который задаётся полями \texttt{cut\_start} и \texttt{cut\_end}}
+\item{\texttt{framing(track)} -- метод, который нарезает трека на фрагменты длинной заданной полем \texttt{frame\_size\_sec} и перекрытием заданным полем \texttt{overlap}.}
 \end{itemize}
+
 
 \subsubsection{Класс \texttt{SpectralTransformer}}
 
-Класс \texttt{SpectralTransformer} предназначен для получения спектрально-временного представления трека, а также для получения коррелограммы. Спектрально-временное представление получается путём оконного преобразования Фурье (см. формулу \ref{eq:stft}) с окном Хемминга размером 10 миллисекунд (см. формулу \ref{eq:stft})
+Класс \texttt{SpectralTransformer} предназначен для получения спектрально-временного представления трека, а также для получения коррелограммы. Спектрально-временное представление получается путём оконного преобразования Фурье (см. формулу \ref{eq:stft}) с окном Хемминга размером 10 миллисекунд (см. формулу \ref{eq:window})
 
 \begin{equation}\label{eq:stft}
-F(m,\omega) = \sum_{n=-\infty}^{\infty} f[n]w[n-m]e^{-j \omega n} 
-\end{cases} 
+F(m, \omega) = \sum \limits_{n=-\infty}^{\infty} f[n]w[n-m]e^{-j \omega n} 
 \end{equation}
-\begin{equation}\label{eq:stft}
-{\begin{aligned}w_{0}(n)\ &{\stackrel {\mathrm {def} }{=}}\ w(n+{\begin{matrix}{\frac {N-1}{2}}\end{matrix}})\\&=0.54+0.46\;\cos \left({\frac {2\pi n}{N-1}}\right)\end{aligned}}
-\end{cases} 
+\begin{equation}\label{eq:window}
+w_i = 0.54 - 0.46 \cos\frac{2\pi i}{n-1}
 \end{equation}
+
+Также в модуле получает ритмические(перкуссионные) признаки. 
+
+\begin{itemize}
+\item{Поле \texttt{alpha} -- коэффициент сглаживания, который может принимать значения от 0 до 1.}
+\item{Поле \texttt{window} -- массив, который содержит в себе окно Хемминга.}
+\item{Поле \texttt{level} -- количество каскадов в }
+\item{Поле \texttt{rate} -- частота передискретизации.}
+\item{\texttt{short\_time\_fourier(track)} -- метод, который преобразует трек оконным преобразованием Фурье с окном Хемминга, возвращает двумерный массив амплитуд типа \texttt{ndarray} }
+\item{\texttt{wavelet\_daubechies(data)} -- метод, который  делает вейвлет преобразования Добеши. }
+\item{\texttt{filter(track)} -- метод, который преобразовывает данные искользуя экспоненциальное сглаживание.}
+\item{\texttt{resampling(data)} -- метод, который передискретизирует данные в \texttt{rate} раз }
+\item{\texttt{normalize\_and\_sum(track)} -- метод, который}
+\end{itemize}
+
 
