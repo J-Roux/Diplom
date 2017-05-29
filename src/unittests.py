@@ -6,8 +6,12 @@ from feature_extraction_module import *
 
 
 class TestFeatureExtractor(unittest.TestCase):
-    test_data = np.linspace(-np.pi * 100, np.pi * 100, 500)
-    test_data_spectre = scipy.fft(test_data)
+    test_data = []
+    test_data_spectre = []
+
+    def setUp(self):
+        self.test_data = np.linspace(-np.pi * 100, np.pi * 100, 500)
+        self.test_data_spectre = scipy.fft(self.test_data)
 
     def test_energy(self):
         energy = Energy()
@@ -36,3 +40,7 @@ class TestFeatureExtractor(unittest.TestCase):
         spcentroid = SpectralCentroid()
         a = spcentroid.get(self.test_data_spectre)
         spspread.get(self.test_data_spectre, [a])
+
+
+if __name__ == '__main__':
+    unittest.run()

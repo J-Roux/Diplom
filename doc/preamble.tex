@@ -206,7 +206,6 @@
 % Зачем: когда в формулах много кириллических символов команда \text{} занимает много места
 \DeclareRobustCommand{\x}[1]{\text{#1}}
 
-
 % Зачем: Задание подписей, разделителя и нумерации частей рисунков
 % Почему: Пункт 2.5.5 Требований по оформлению пояснительной записки.
 \DeclareCaptionLabelFormat{stbfigure}{\\Рисунок \arabic{section}.\arabic{figure}}
@@ -214,7 +213,7 @@
 \DeclareCaptionLabelSeparator{stb}{~--~}
 \captionsetup{labelsep=stb}
 \captionsetup[figure]{labelformat=stbfigure,justification=centering}
-\captionsetup[table]{labelformat=stbtable,justification=raggedright}
+\captionsetup[table]{labelformat=stbtable,justification=raggedright,aboveskip=0pt}
 
 % Зачем: Окружения для оформления формул
 % Почему: Пункт 2.4.7 требований по оформлению пояснительной записки и специфические требования различных кафедр
@@ -310,6 +309,9 @@
 % Зачем: Включение номера раздела в номер рисунка. Нумерация рисунков внутри раздела.
 \AtBeginDocument{\numberwithin{figure}{section}}
 
+\let\oldequation=\equation
+\let\endoldequation=\endequation
+\renewenvironment{equation}{\vspace{-0.3em}\begin{oldequation}}{\end{oldequation}\vspace{-0.9em}}
 
 % Зачем: Дополнительные возможности в форматировании таблиц
 \usepackage{makecell}
@@ -347,67 +349,29 @@
 % Примечание: final нужен для переопределения режима draft, в котором листинги не выводятся в документ.
 \usepackage[final]{listings}
 
-
-% Зачем: настройка оформления листинга для языка F#
-\definecolor{bluekeywords}{rgb}{0.13,0.13,1}
-\definecolor{greencomments}{rgb}{0,0.5,0}
-\definecolor{turqusnumbers}{rgb}{0.17,0.57,0.69}
-\definecolor{redstrings}{rgb}{0.5,0,0}
-
 \renewcommand{\lstlistingname}{Листинг}
 
-\lstdefinelanguage{FSharp}
-    {morekeywords={abstract,and,as,assert,base,begin,class,default,delegate,do,done,downcast,downto,elif,else,end,exception,extern,false,finally,for,fun,function,global,if,in,inherit,inline,interface,internal,lazy,let,let!,match,member,module,mutable,namespace,new,not,null,of,open,or,override,private,public,rec,return,return!,select,static,struct,then,to,true,try,type,upcast,use,use!,val,void,when,while,with,yield,yield!,asr,land,lor,lsl,lsr,lxor,mod,sig,atomic,break,checked,component,const,constraint,constructor,continue,eager,event,external,fixed,functor,include,method,mixin,object,parallel,process,protected,pure,sealed,tailcall,trait,virtual,volatile},
-    keywordstyle=\bfseries\color{bluekeywords},
-    sensitive=false,
-    morecomment=[l][\color{greencomments}]{///},
-    morecomment=[l][\color{greencomments}]{//},
-    morecomment=[s][\color{greencomments}]{{(*}{*)}},
-    morestring=[b]",
-    stringstyle=\color{redstrings},
-    }
-
-\lstdefinestyle{fsharpstyle}{
-   xleftmargin=0ex,
-   language=FSharp,
-   basicstyle=\footnotesize\ttfamily,
-   breaklines=true,
-   columns=fullflexible
-}
-
-\lstdefinestyle{csharpinlinestyle} {
-  language=[Sharp]C,
-  morekeywords={yield,var,get,set,from,select,partial,where,async,await},
-  breaklines=true,
-  columns=fullflexible,
-  basicstyle=\footnotesize\ttfamily
-}
-
 \lstdefinelanguage{TypeScript}{
-    keywords={typeof, number, string, boolean, public, private, protected, virtual, static, override, class, interface, declare, module, any, new, true, false, catch, function, return, null, catch, switch, var, if, in, while, do, else, case, break, for, console,log},
-    keywordstyle=\color{blue}\bfseries,
+    keywords={typeof, number, string, boolean, public, private, protected, virtual, static, override, class, interface, declare, module, any, new, true, false, catch, function, return, null, catch, switch, var, if, in, while, do, else, case, break, for, console, log},
+    keywordstyle=\text,
     ndkeywords={class, export,exports, boolean, throw, implements, import, this},
-    keywordstyle=\bfseries\color{bluekeywords},
+    keywordstyle=\text,
     identifierstyle=\color{black},
     sensitive=false,
+    showstringspaces=false,
     comment=[l]{//},
     morecomment=[s]{/*}{*/},
-    commentstyle=\color{greencomments}\ttfamily,
-    stringstyle=\color{redstrings}\ttfamily,
+    commentstyle=\color{black}\ttfamily,
+    stringstyle=\color{black}\ttfamily,
     morestring=[b]',
     morestring=[b]",
-    frame=lr,
-    rulecolor=\bfseries\color{bluekeywords},
+    frame=none,
+    numbersep=16pt,
+    rulecolor=\color{black},
     breaklines=true,
     columns=fullflexible,
-    basicstyle=\footnotesize\ttfamily
+    basicstyle=\normalsize\ttfamily
 }
-
-\lstdefinestyle{csharpstyle}{
-  language=[Sharp]C,
-  frame=lr,
-  rulecolor=\color{blue!80!black}}
-
 
 % Зачем: Нумерация листингов в пределах секции
 \AtBeginDocument{\numberwithin{lstlisting}{section}}
@@ -497,10 +461,6 @@
 
 \setstretch{0.98}
 
-
-
 \makeatletter
-
 \renewcommand\@biblabel[1]{#1}
-
 \makeatother

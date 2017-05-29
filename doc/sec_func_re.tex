@@ -58,6 +58,44 @@
 \item{Модуль визуализации - \texttt{VisualizeDataModule}.}
 \end{enumerate}
 
+
+\subsubsection{Класс \texttt{Track}}
+
+Класс \texttt{Track}  является абстрацией для хранения трека в виде массива отсчётов, частоты дискретизации и метаинформации о треке.
+
+Класс \texttt{Track} имеет следующие  поля:
+\begin{itemize}
+\item{Поле \texttt{data} -- массив ndarray, который хранит в трек в виде отсчётов.}
+\item{Поле \texttt{sample\_rate} -- частота дискретизации трека.}
+\item{Поле \texttt{label} -- поле хранящее метаинформацию о треке.}
+\end{itemize}
+
+\subsubsection{Класс \texttt{SpectralTrack}}
+
+Класс \texttt{SpectralTrack} наследуется от класса  \texttt{Track}  и  является абстрацией для хранения  спектра трека и его коррелограммы
+
+Класс \texttt{Track} имеет следующие  поля:
+\begin{itemize}
+\item{Поле \texttt{spectra\_data} -- массив ndarray, который хранит спектрограмму трека, полученную с помощью оконного преобразования Фурье.}
+\item{Поле \texttt{percussion\_data} -- масств ndarray, который хранит коррелограмму трека.}
+\end{itemize}
+
+\subsubsection{Класс \texttt{TrackModel}}
+
+Класс \texttt{TrackModel} является абстракцией для хранения временного, спектрального, ритмического и мел-кепстрального образа.
+
+Класс \texttt{TrackModel} имеет следующие  методы и поля:
+
+\begin{itemize}
+\item{Поле \texttt{timing\_features} -- массив ndarray, который хранит временной образ трека.}
+\item{Поле \texttt{spectral\_features} -- масств ndarray, который хранит спектральный образ трека.}
+\item{Поле \texttt{percussion\_features} -- массив ndarray, который хранит ритмический образ трека.}
+\item{Поле \texttt{mfcc\_features} -- массив ndarray, который хранит мел-кепстраьный образ трека.}
+\item{Поле \texttt{label} -- поле хранящее метаинформацию о треке .}
+\item{\texttt{to\_vector()} -- метод, который конкатенирует образы. И возвращает одномерный массив типа ndarray.}
+\end{itemize}
+
+
 \subsubsection{Класс \texttt{WavModule}}
 
 Класс \texttt{WavModule} предназначен для преобразования MP3 к формату WAV и считывании данных в Numpy-массив. 
@@ -68,6 +106,7 @@
 \item{ \texttt{create\_wav(file\_name)}  процедура, которая принимает на вход путь к MP3-файлу и с помошью стандартной библиотеки Python вызывает либо bash-скрипт в случае запуска в операционной системе Linux, либо batch-скрипт в случае запуска в операционной системе Windows, который использует консольное приложение Lame для преобразования MP3-файла в WAV формат}
 \item{ \texttt{read\_wav(filename, label)} - метод, который считывает файл формата WAV и сохраняет данные в класс \texttt{Track}}
 \end{itemize}
+
 
 \subsubsection{Класс \texttt{PreprocessingModule}}
 
@@ -121,5 +160,164 @@ w_i = 0.54 - 0.46 \cos\frac{2\pi i}{n-1}
 \item{\texttt{resampling(data)} -- метод, который передискретизирует данные в \texttt{rate} раз }
 \item{\texttt{normalize\_and\_sum(track)} -- метод, который}
 \end{itemize}
+
+\subsubsection{Класс \texttt{FeatureExtractror}}
+
+Класс \texttt{FeatureExtractror} предназначен для
+
+\begin{itemize}
+\item{Поле \texttt{time\_feature\_models} -- коэффициент сглаживания, который может принимать значения от 0 до 1.}
+\item{Поле \texttt{spectre\_feature\_models} -- массив, который содержит в себе окно Хемминга.}
+\item{Поле \texttt{results} -- количество каскадов в }
+\item{Поле \texttt{nceps} -- частота передискретизации.}
+\item{Поле \texttt{frame\_size} -- частота передискретизации.}
+\item{\texttt{extract\_feature(track)} -- метод, }
+\item{\texttt{extract\_percussion\_feature(track)} -- метод, который  делает вейвлет преобразования Добеши. }
+\item{\texttt{extract\_mfcc(track)} -- метод, который преобразовывает данные искользуя экспоненциальное сглаживание.}
+\item{\texttt{extract\_spectra\_feature(track)} -- метод, который передискретизирует данные в \texttt{rate} раз }
+\item{\texttt{normalize\_and\_sum(track)} -- метод, который}
+\end{itemize}
+
+\subsubsection{Класс \texttt{FeatureExtractorModel}}
+
+Класс \texttt{FeatureExtractorModel} абстрактный класс, который используется в качестве базового для классов, которые извлекают признак из временной или из спектральной области.
+
+Класс \texttt{FeatureExtractorModel} имеет следующие методы:
+
+\begin{itemize}
+\item{\texttt{get(data, params)} -- метод, который принимает на вход ndarray и массив параметров, а на выход выдаёт признак типа float. В данном классе метод абстрактный }
+\item{\texttt{normalize(result, data))} -- метод, который нормализует данные про размер входного массива}
+\end{itemize}
+
+
+
+\subsubsection{Класс \texttt{SpectralFeature}}
+
+Класс \texttt{SpectralFeature} абстрактный класс, который используется в качестве базового для классов, который извлекают признак из спектральной области. Класс наследуется от \texttt{FeatureExtractorModel}.
+
+\subsubsection{Класс \texttt{TimingFeature}}
+
+Класс \texttt{TimingFeature} абстрактный класс, который используется в качестве базового для классов, который извлекают признак из временной области. Класс наследуется от \texttt{FeatureExtractorModel}.
+
+
+\subsubsection{Класс \texttt{Energy}}
+
+Класс \texttt{Energy} класс, который получает значение энергии сигнала из временной области (см. формулу \ref{eq:energy}). Класс наследуется от \texttt{TimingFeature}.
+
+Класс \texttt{Energy} имеет следующие методы:
+
+\begin{itemize}
+\item{\texttt{get(data, params)} --  метод, который принимает на вход массив отсчётов, а на выход выдаёт энергию сигнала. }
+\end{itemize}
+
+
+\subsubsection{Класс \texttt{ZeroCrossingRate}}
+
+Класс \texttt{ZeroCrossingRate} класс, который получает значение количества переходов сигнала через ноль из временной области (см. формулу \ref{eq:zcr}). Класс наследуется от \texttt{TimingFeature}.
+
+Класс \texttt{ZeroCrossingRate} имеет следующие методы:
+
+\begin{itemize}
+\item{\texttt{get(data, params)} --  метод, который принимает на вход массив отсчётов, а на выход выдаёт количества переходов сигнала через ноль . }
+\end{itemize}
+
+
+\subsubsection{Класс \texttt{Autocorrelation}}
+
+Класс \texttt{Autocorrelation} класс, который получает значение автокорреляцию первого рода из временной области (см. формулу \ref{eq:autocorrelation}). Класс наследуется от \texttt{TimingFeature}.
+
+Класс \texttt{Autocorrelation} имеет следующие методы:
+
+\begin{itemize}
+\item{\texttt{get(data, params)} --  метод, который принимает на вход массив отсчётов, а на выход выдаёт автокорреляцию первого рода. }
+\end{itemize}
+
+\subsubsection{Класс \texttt{SpectralCentroid}}
+
+Класс \texttt{SpectralCentroid} класс, который получает значение арифметического среднего взешенного из спектра (см. формулу \ref{eq:centroid}). Класс наследуется от \texttt{SpectralFeature}.
+
+Класс \texttt{SpectralCentroid} имеет следующие методы:
+
+\begin{itemize}
+\item{\texttt{get(data, params)} --  метод, который принимает на вход массив отсчётов, а на выход  значение арифметического среднего взвешенного. }
+\end{itemize}
+
+\subsubsection{Класс \texttt{SpectralSmoothness}}
+
+Класс \texttt{SpectralSmoothness} класс, который получает значение гладкости спектра (см. формулу \ref{eq:smooth}). Класс наследуется от \texttt{SpectralFeature}.
+
+Класс \texttt{SpectralSmoothness} имеет следующие методы:
+
+\begin{itemize}
+\item{\texttt{get(data, params)} --  метод, который принимает на вход массив отсчётов, а на выход значение гладкости спектра . }
+\end{itemize}
+
+\subsubsection{Класс \texttt{LinearRegression}}
+
+Класс \texttt{LinearRegression} класс, который получает значение линейной регрессии спектра  (см. формулу \ref{eq:regression}). Класс наследуется от \texttt{SpectralFeature}.
+
+Класс \texttt{LinearRegression} имеет следующие методы:
+
+\begin{itemize}
+\item{\texttt{get(data, params)} --  метод, который принимает на вход массив отсчётов, а на выход  значение линейной регрессии спектра . }
+\end{itemize}
+
+\subsubsection{Класс \texttt{SpectralSpread}}
+
+Класс \texttt{SpectralSpread} класс, который получает значение дисперсии спектра относительно арифметического среднего взвешенного (см. формулу \ref{eq:spread}). Класс наследуется от \texttt{SpectralFeature}.
+
+Класс \texttt{SpectralSpread} имеет следующие методы:
+
+\begin{itemize}
+\item{\texttt{get(data, params)} --  метод, который принимает на вход массив отсчётов и массив \texttt{params}, где первым элементом идёт вычисленное арифметическое среднее взвешенное , а на выход выдаёт значение  дисперсии спектра относительно арифметического среднего взвешенного . }
+\end{itemize}
+
+
+
+\subsubsection{Класс \texttt{SpectralDissymmetry}}
+
+Класс \texttt{SpectralDissymmetry} класс, который получает коэффициент асимметрии спектра (см. формулу \ref{eq:spread}). Класс наследуется от \texttt{SpectralFeature}.
+
+Класс \texttt{SpectralDissymmetry} имеет следующие методы:
+
+\begin{itemize}
+\item{\texttt{get(data, params)} --  метод, который принимает на вход массив отсчётов и массив \texttt{params}, где первым элементом идёт вычисленное арифметическое среднее взвешенное , а на выход выдаёт значение коэффициент асимметрии спектра . }
+\end{itemize}
+
+
+
+
+\subsubsection{Класс \texttt{FeatureProcessing}}
+
+Класс \texttt{FeatureProcessing} предназначен для
+
+\begin{itemize}
+\item{Поле \texttt{with\_mean} -- коэффициент сглаживания, который может принимать значения от 0 до 1.}
+\item{Поле \texttt{with\_std} -- массив, который содержит в себе окно Хемминга.}
+\item{Поле \texttt{with\_skew} -- количество каскадов в }
+\item{Поле \texttt{with\_kurtosis} -- частота передискретизации.}
+\item{\texttt{mean(data)} -- метод, }
+\item{\texttt{std(data)} -- метод, который  делает вейвлет преобразования Добеши. }
+\item{\texttt{skew(data)} -- метод, который преобразовывает данные искользуя экспоненциальное сглаживание.}
+\item{\texttt{kurtosis(data)} -- метод, который передискретизирует данные в \texttt{rate} раз }
+\item{\texttt{process\_feature(track)} -- метод, который}
+\end{itemize}
+
+\subsubsection{Класс \texttt{GenreClassificationModule}}
+
+Класс \texttt{GenreClassificationModule} предназначен для
+
+\begin{itemize}
+\item{Поле \texttt{classifiers} -- коэффициент сглаживания, который может принимать значения от 0 до 1.}
+\item{Поле \texttt{labels\_name} -- массив, который содержит в себе окно Хемминга.}
+\item{Поле \texttt{cv} -- количество каскадов в }
+\item{\texttt{cross\_validation\_predict(clf, data, labels)} -- метод, }
+\item{\texttt{std(data)} -- метод, который  делает вейвлет преобразования Добеши. }
+\item{\texttt{skew(data)} -- метод, который преобразовывает данные искользуя экспоненциальное сглаживание.}
+\item{\texttt{kurtosis(data)} -- метод, который передискретизирует данные в \texttt{rate} раз }
+\item{\texttt{process\_feature(track)} -- метод, который}
+\end{itemize}
+
+
 
 
