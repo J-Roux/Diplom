@@ -35,7 +35,7 @@ def classify_p(clf, clf_name, data, labels, cv, meta):
 
 
 clf = {
-    # 'Nearest Neighbors 3': KNeighborsClassifier(3),
+     'Nearest Neighbors 3': KNeighborsClassifier(3),
     # 'Nearest Neighbors 7': KNeighborsClassifier(7),
     # 'Nearest Neighbors 15': KNeighborsClassifier(15),
     'Linear SVM': SVC(kernel="linear", C=0.025),

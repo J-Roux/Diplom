@@ -9,11 +9,11 @@ class DatabaseModule:
         self.conn = pymongo.MongoClient(ip_address, port)
         self.conn = self.conn.mydb
 
-    def track_model_to_json(self, track):
+    def track_model_to_dict(self, track):
         return {'label': json.dumps(track.label),
                 'feature': json.dumps(track.to_vector().tolist())}
 
     def store(self, track):
-        json = self.track_model_to_json(track)
+        json = self.track_model_to_dict(track)
         print json
         self.conn.tracks.save(json)

@@ -30,7 +30,7 @@ class MainModule:
     spectral_transformer = SpectralTransformer(alpha=0.99,
                                                level=4,
                                                rate=16,
-                                               window=signal.hamming(1024))
+                                               window=signal.hamming(4096))
     feature_extractor = FeatureExtractor(models=models, nceps=24)
     feature_processing = FeatureProcessing(with_kurtosis=True,
                                            with_skew=True)
@@ -46,7 +46,7 @@ class MainModule:
                  spectral_transformer=SpectralTransformer(alpha=0.99,
                                                           level=4,
                                                           rate=16,
-                                                          window=signal.hamming(1024)),
+                                                          window=signal.hamming(4096)),
                  feature_extractor=FeatureExtractor(models=models, nceps=24),
                  feature_processing=FeatureProcessing(with_kurtosis=True,
                                                      with_skew=True)):
