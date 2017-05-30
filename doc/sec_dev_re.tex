@@ -1,2 +1,61 @@
 \section{РАЗРАБОТКА ПРОГРАММНЫХ МОДУЛЕЙ}
 \label{sec:dev}
+
+При разработке системы одними из наиважнейших требований к исходному коду являются его расширяемость и поддерживаемость. Реализация программных модулей с учетом этих требований приводит к простоте расширения функционала в критических местах, обеспечению разделенности и независимости компонентов системы, что улучшает их тестируемость и в целом позволяет добиться реализации более стабильной и простой в понимании кодовой базы.
+
+В классе \texttt{FeatureExtractor} для упрощения добавления способов получения признаков, которые могут иметь зависимости между собой, используется абстрактный класс \texttt{FeatureExtractorModel} для декларации интерфейса и два абстрактных класса для различения признаков по временным и спектральным - \texttt{TimingFeature} и \texttt{SpectralFeature} соответственно. В сигнатуре  метода \texttt{get(data, params)}  \texttt{params} -- это параметр, через который передаётся вычисленный признак и который необходим для вычисления текущего.
+ 
+\begin{lstlisting}[language=TypeScript, label=lst:abstract]
+
+class FeatureExtractorModel:
+    __metaclass__ = ABCMeta
+
+    @abstractmethod
+    def get(self, data, params=None):
+        pass
+
+    def check(self, data):
+        if not isinstance(data, np.ndarray):
+            raise TypeError("input is not array")
+
+    def normalize(self, result, data):
+        return result / float(len(data))
+       
+        
+\end{lstlisting}
+
+Так как вычисления одних признаков зависит от вычисления других, то задача получения всех признаков становится задачей выполнения графа. Поэтому для описание графа используется ассоциативный массив, где ключ -- тип метода выделения признака, который наследуется либо от \texttt{TimingFeature}, либо от  \texttt{SpectralFeature}, а значение массив таких же типов результаты которых передаётся типу ключа.
+
+\begin{lstlisting}[language=TypeScript, label=lst:graph]
+
+models = {
+    Energy: [],
+    ZeroCrossingRate: [],
+    Autocorrelation: [],
+    SpectralCentroid: [],
+    SpectralSmoothness: [],
+    SpectralSpread: [SpectralCentroid],
+    SpectralDissymmetry: [SpectralCentroid],
+    Rolloff: [],
+    LinearRegression: [],
+    SFM: [],
+    SCF: []
+}
+        ...
+\end{lstlisting}
+
+Как видно из примера, классам \texttt{SpectralSpread} и  \texttt{SpectralDissymmetry} требуется результат вычисления класса \texttt{SpectralCentroid}. Для получения всех признаков  класс \texttt{FeatureExtractor} интеративно вычисляет признаки, которые не зависят от результат вычисления других признаков, а потом те, которые зависят только от одного и так далее. Значение признаков заносится в ассоциативный массив, где ключ -- это тип, а значение -- это результат вычисление данного признака.
+
+\begin{lstlisting}[language=TypeScript, label=lst:evalgraph]
+
+    def eval_models(self, extractors, data):
+        for i in range(np.amax(map(lambda x: len(x), extractors.values())) + 1):
+            for feature_extractor in filter(lambda x: len(extractors[x]) == i, extractors):
+                self.results[feature_extractor] = \
+                    feature_extractor() \
+                        .get(data,
+                                map(lambda x: self.results[x] if x in self.results else None,
+                                 extractors[feature_extractor]))
+        ...
+        
+\end{lstlisting}

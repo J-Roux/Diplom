@@ -77,10 +77,17 @@ if __name__ == '__main__':
     X, Y = load_data()
     meta = pickle.load(open(path + '\\meta.data', 'rb'))
 
-    result = module.classify(X, Y, meta)
+    # result = module.classify(X, Y, meta)
 
-    for i in result:
-        cm = module.plot_confusion_matrix(result[i][1], i)
-        print i + ' ' + str(sum(cm[i][i] for i in xrange(len(cm))) / 10)
-    #   visualizer.plot_3d(X, labels=Y, genre_list=genre_list[:3], reduction_method='t_sne')
-    #   visualizer.plot_2d(X, labels=Y, genre_list=genre_list[:3], reduction_method='t_sne')
+    # for i in result:
+    #    cm = module.plot_confusion_matrix(result[i][1], i)
+    #    print i + ' ' + str(sum(cm[i][i] for i in xrange(len(cm))) / 10)
+
+    new_genre_list = ['classical', 'metal', 'pop']
+    res = filter(lambda x: new_genre_list[0] in x[2] or
+                           new_genre_list[1] in x[2] or
+                           new_genre_list[2] in x[2], zip(X, Y, meta))
+    X = map(lambda x: x[0], res)
+    Y = map(lambda x: x[1], res)
+    visualizer.plot_2d(X, labels=Y, genre_list=new_genre_list, reduction_method='pca')
+    visualizer.plot_3d(X, labels=Y, genre_list=new_genre_list, reduction_method='pca')
