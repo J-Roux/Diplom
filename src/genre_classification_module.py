@@ -89,7 +89,9 @@ class GenreClassificationModule:
         plt.yticks(tick_marks, classes)
 
         if normalize:
-            cm = np.round(cm.astype('float') / cm.sum(axis=1)[:, np.newaxis] * 100).astype('int')
+            cm = np.round(cm.astype('float') /
+                 cm.sum(axis=1)[:, np.newaxis] * 100)\
+                .astype('int')
 
         print(cm)
 

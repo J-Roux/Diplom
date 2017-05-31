@@ -3,6 +3,8 @@
 
 При разработке системы одними из наиважнейших требований к исходному коду являются его расширяемость и поддерживаемость. Реализация программных модулей с учетом этих требований приводит к простоте расширения функционала в критических местах, обеспечению разделенности и независимости компонентов системы, что улучшает их тестируемость и в целом позволяет добиться реализации более стабильной и простой в понимании кодовой базы.
 
+\subsection{Вычисления временных и спектральных признаков}
+
 В классе \texttt{FeatureExtractor} для упрощения добавления способов получения признаков, которые могут иметь зависимости между собой, используется абстрактный класс \texttt{FeatureExtractorModel} для декларации интерфейса и два абстрактных класса для различения признаков по временным и спектральным - \texttt{TimingFeature} и \texttt{SpectralFeature} соответственно. В сигнатуре  метода \texttt{get(data, params)}  \texttt{params} -- это параметр, через который передаётся вычисленный признак и который необходим для вычисления текущего.
  
 \begin{lstlisting}[language=TypeScript, label=lst:abstract]
@@ -49,7 +51,8 @@ models = {
 \begin{lstlisting}[language=TypeScript, label=lst:evalgraph]
 
     def eval_models(self, extractors, data):
-        for i in range(np.amax(map(lambda x: len(x), extractors.values())) + 1):
+        max_length = np.amax(map(lambda x: len(x), extractors.values())) + 1)
+        for i in range(max_length):
             for feature_extractor in filter(lambda x: len(extractors[x]) == i, extractors):
                 self.results[feature_extractor] = \
                     feature_extractor() \
@@ -59,3 +62,64 @@ models = {
         ...
         
 \end{lstlisting}
+
+\subsection{Параллельное распараллеливание вычислений в модуле \texttt{GenreClassificationModule}}
+
+В модуле жанровой классификации \texttt{GenreClassificationModule} для ускорения классификации было использованно распараллеливание на несколько процессов. Для это использовалась библиотека joblib, которая позволяет выполнять циклы на всех ядрах процессора. Главным ограничением это библиотеки -- распараллелить можно только функцию вне класс. Поэтому вся логика классификации была вынесена в отдельную функцию. 
+
+\begin{lstlisting}[language=TypeScript, label=lst:classify]
+
+   def classify(self, data, labels, meta):
+        temp = Parallel(n_jobs=CPU_COUNT)(
+            delayed(classify_p)
+            (self.classifiers[name], name, data, labels, self.cv, meta) for name in self.classifiers
+        )
+        result = dict()
+        for i in temp:
+            result.update(i)
+        return result
+
+
+
+\end{lstlisting}
+
+Результатом работы функции \texttt{classify_p} является ассоциативный массив, где ключ -- название метода классификации, а значение представляет собой массив, который содержит в себе:
+\begin{itemize}
+    \item МО оценки перекрёстной проверки;
+    \item CКО оценки перекрёстной проверки;
+    \item матрицу ошибок классификации.
+\end{itemize}
+
+Так как функция \texttt{Parallel} возвращает массив результатов функции, которую распараллелили, то необходимо собрать массив одноэлементных словарей в одни большой массив.
+
+
+\subsection{Отображение матрицы ошибок классификации}
+
+В классе \texttt{GenreClassificationModule} для  отображения матрицы ошибок классификации матрицы используется библиотека Matplotlib, которая позволяет отображать многие виды графиков и диаграмм. Для большей наглядности цвет фона ячейки матрицы зависит от значения, которое находится внтури. В качестве цвета фона используется синий цвет в градации от белого до почти чёрного.
+
+\begin{lstlisting}[language=TypeScript, label=lst:normalize]
+    plt.imshow(cm, interpolation='nearest', cmap=cmap)
+    plt.colorbar()
+\end{lstlisting}
+
+На вход функции отображения подаётся матрица ошибок с количеством распознаных образом. Для нормализации данных для каждого ряда считается сумма и значение каждого элемента ряда делится на сумму, умножается на 100 и округляется.
+
+\begin{lstlisting}[language=TypeScript, label=lst:normalize]
+    cm = np.round(cm.astype('float') /
+         cm.sum(axis=1)[:, np.newaxis] * 100)\
+         .astype('int')
+
+\end{lstlisting}
+
+Определяется порог при котором цвет шрифта внутри клетки меняется с чёрного на белый.
+
+\begin{lstlisting}[language=TypeScript, label=lst:normalize]
+
+    thresh = cm.max() / 2.
+    for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
+        plt.text(j, i, cm[i, j],
+            horizontalalignment="center",
+            color="white" if cm[i, j] > thresh else "black")
+
+\end{lstlisting}
+
