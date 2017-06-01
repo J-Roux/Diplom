@@ -7,18 +7,21 @@ import numpy as np
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
 from mpl_toolkits.mplot3d import Axes3D
+from mvpa2.suite import *
 
 class VisualizeDataModule:
 
     def dimension_reduction(self, data, n_component, reduction_method):
         if reduction_method == 't_sne':
             model = TSNE(n_components=n_component, random_state=0)
-        else:
+        elif reduction_method == 'pca':
             model = PCA(n_components=n_component)
-        np.set_printoptions(suppress=True)
+        else:
+            raise  ValueError("non valid reduction algorithm")
         X_tsne = model.fit_transform(data)
         X_tsne -= X_tsne.min(axis=0)
         X_tsne /= X_tsne.max(axis=0)
+        np.set_printoptions(suppress=True)
         return X_tsne
 
     def plot_2d(self, data, labels, genre_list, show=True, reduction_method='t_sne'):
@@ -72,3 +75,16 @@ class VisualizeDataModule:
         if show:
             plt.show()
 
+    def plot_som(self, data, labels, genre_list):
+        model = SimpleSOMMapper((1000, 200), 10, learning_rate=0.05)
+        data = np.array(data)
+        model.train(data)
+        plt.imshow(model.K, origin='lower')
+        mapped = model(data)
+
+        pl.title('Color SOM')
+        # SOM's kshape is (rows x columns), while matplotlib wants (X x Y)
+        for i, m in enumerate(mapped):
+            pl.text(m[1], m[0], genre_list[i], ha='center', va='center',
+                    bbox=dict(facecolor='white', alpha=0.5, lw=0))
+        plt.show()

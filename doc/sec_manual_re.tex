@@ -157,9 +157,31 @@ clf = {
     ...
 }
 
-clf_module = GenreClassificationModule(cv=10, labels_name=genre_list, classifiers=clf)
+clf_module = GenreClassificationModule(
+                  cv=10, 
+                  labels_name=genre_list, 
+                  classifiers=clf)
 				 
 \end{lstlisting}
 
+Затем вызвать метод \texttt{classify}, который вернёт ассоциативный массив, где ключ -- это название метода классификации, а значение массив содержащий МО оценки перекрёстной проверки, СКО этой оценки и матрицу ошибок классификации. Метод \texttt{classify} принимает первым значением массив информационных образов, вторым -- их кассы и метаинформацию о образе. Метаинформации используется при классификации всего трека, а не отдельных фрагметов. Перед началом выполнения классификации рекомендуется нормализовать данные по каждому признаку.
 
+\begin{lstlisting}[language=TypeScript, label=lst:testing:results]
+X, Y, meta = load_data()
 
+result = module.classify(X, Y, meta)
+\end{lstlisting}
+
+Для создания модуля визуализации необходимо создать объект класса \texttt{VisualizeDataModule}, который имеет два метода: \texttt{plot\_2d} -- для отображение в двумерную плоскость и \texttt{plot\_3d} -- для отображения пространстав признаков в трёхмерное пространство. И меют одинаковую сигнатуру. Первым аргументом идёт массив информационных образов, вторым -- их классы, флаг отоборажения в отдельном окне и метод уменьшения размерности. Класс поддерживает два метода уменьшения размерности: t-SNE для нелинейного распределения и PCA (метод главных компонент) для линейного.
+
+\begin{lstlisting}[language=TypeScript, label=lst:testing:results]
+visualizer = VisualizeDataModule()
+
+visualizer.plot_2d(X, labels=Y, 
+                   genre_list=genre_list, 
+                   reduction_method='PCA')
+visualizer.plot_3d(X, labels=Y, 
+                   genre_list=genre_list, 
+                   reduction_method='t-SNE')
+
+\end{lstlisting}

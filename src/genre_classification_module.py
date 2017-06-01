@@ -18,19 +18,22 @@ from collections import Counter
 CPU_COUNT = multiprocessing.cpu_count()
 
 
-def classify_p(clf, clf_name, data, labels, cv, meta):
+def classify_p(clf, clf_name, data, labels, cv, meta=None):
     predicted = GenreClassificationModule.cross_validation_predict(clf, data, labels, cv=cv)
     scores = GenreClassificationModule.cross_val_score(clf, data, labels, cv=cv)
-    clf.fit(data, labels)
-    unique_meat = set(meta)
-    new_predicted = []
-    new_label = []
-    for i in unique_meat:
-        temp = filter(lambda x: i in x[2], zip(predicted, labels, meta))
-        new_label.append(temp[0][1])
-        new_predicted.append(Counter([j[0] for j in temp]).most_common(1)[0][0])
+    if meta != None:
+        clf.fit(data, labels)
+        unique_meat = set(meta)
+        new_predicted = []
+        new_label = []
+        for i in unique_meat:
+            temp = filter(lambda x: i in x[2], zip(predicted, labels, meta))
+            new_label.append(temp[0][1])
+            new_predicted.append(Counter([j[0] for j in temp]).most_common(1)[0][0])
+            cnf_matrix = confusion_matrix(new_label, new_predicted)
+    else:
+        cnf_matrix = confusion_matrix(labels, predicted)
     accuracy, std = scores.mean(), scores.std()
-    cnf_matrix = confusion_matrix(new_label, new_predicted)
     return {clf_name: [(accuracy, std), cnf_matrix]}
 
 
