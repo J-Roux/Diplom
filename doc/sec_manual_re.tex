@@ -25,5 +25,141 @@
 \end{itemize}
 
 
-\subsection{Руководство по использованию программного средства}
+\subsection{Руководство по установке и запуску программного средства}
+\label{sub:manual:install}
+
+Для установки приложения необходимо распаковать архив main\_module.zip на любой жесткий диск, в котором будет достаточно свободного пространства. Требования описаны выше. В результате этого создастся папка  main\_module, в которой будут находиться все скрипты нужные для функционирования модуля. Для использования модуля необходимо добавить скрипты в собственный проект и с помощью команды \texttt{import} подключить \texttt{MainModule} для выделения информационных образов, \texttt{GenreClassificationModule} для жанровой классификации и  \texttt{VisualizeDataModule} для визуализации информационных образов.
+
+\subsection{Руководство по использованию программного модуля}
 \label{sub:manual:us}
+
+Для начала работы с модулем необходимо создать объекты подмодулей с необходимыми параметрами. 
+
+Для считывания музыкального произведения необходимо создать объект класса \texttt{WavModule}, который не принимает параметров.
+
+\begin{lstlisting}[language=TypeScript, label=lst:testing:results]
+	wav_module = WavModule()
+\end{lstlisting}
+
+Для создание модуля препроцессинга и нарезки необходимо создать объект класса \texttt{PreprocessingModule}, где в конструкторе указывать следующие параметры:
+\begin{itemize} 
+\item \texttt{alpha} -- коэффициент экспоненициального сглаживания;
+\item \texttt{cut\_end} -- процент трека, которое будет отсечено с конца трека;
+\item \texttt{cut\_start} -- процент трека, которое будет отсечено с конца трека;
+\item \texttt{overlap} -- процент пересечения фрагментов трека;
+\item \texttt{ frame\_size\_sec} -- длина каждого фрагмента в секундах.
+\end{itemize}
+
+\begin{lstlisting}[language=TypeScript, label=lst:testing:results]
+	preprocessing_module = PreprocessingModule(
+					  alpha=0.99,
+                                           cut_end=0.2,
+                                           cut_start=0.2,
+                                           overlap=0.1,
+                                           frame_size_sec=5)
+\end{lstlisting}
+
+Для создания модуля получения частотно-временного представления сигнала необходимо создать объект класса \texttt{SpectralTransformer}, где в конструкторе указывать слежующие параметры:
+
+\begin{itemize} 
+\item \texttt{alpha} -- коэффициент экспоненициального сглаживания;
+\item \texttt{level}  -- количество каскадов при вейвлет преобразовании Добеши;
+\item \texttt{rate}  -- процент пересечения фрагментов трека;
+\item \texttt{window} -- массив содержащий окно.
+\end{itemize}
+
+\begin{lstlisting}[language=TypeScript, label=lst:testing:results]
+       window = signal.hamming(4096)
+       spectral_transformer = SpectralTransformer(
+       					  alpha=0.99,
+                                           level=4,
+                                           rate=16,
+                                           window=window)
+\end{lstlisting}
+
+Для создания модуля извленчения информационных образов необходим необходимо создать объект класса  \texttt{FeatureProcessing}, где в конструкторе указыватеются следующие параметры:
+
+\begin{itemize} 
+\item \texttt{models} -- ассоциативный массив, где ключ является наследником класса \texttt{FeatureExtractorModel}, а значение - массив зависимых признаков ;
+\item \texttt{nceps}  -- количество мел-кепстральных коэффициентов;
+\end{itemize}
+
+\begin{lstlisting}[language=TypeScript, label=lst:testing:results]
+       models = {
+		Energy: [],
+    		SpectralSmoothness: [],
+     		SpectralSpread: [SpectralCentroid],
+       		...
+       }
+       feature_extractor = FeatureExtractor(
+       						   models=models,
+       						    nceps=24)
+\end{lstlisting}
+
+Для создания модуля обработки информационных образов необходимо создать объект класса  \texttt{FeatureProcessing}, где в конструкторе указыватеются следующие параметры:
+
+\begin{itemize} 
+\item \texttt{with\_mean} -- добавление в информационный вектор МО спектральных признаков и мел-кепстральных коэффициентов;
+\item \texttt{with\_std}  -- добавление в информационный вектор СКО спектральных признаков и мел-кепстральных коэффициентов;
+\item \texttt{with\_kurtosis}  -- добавление в информационный вектор коэффициента эксесса спектральных признаков и мел-кепстральных коэффициентов;
+\item \texttt{with\_skew} -- добавление в информационный вектор коэффициента склонения спектральных признаков и мел-кепстральных коэффициентов;
+\end{itemize}
+
+\begin{lstlisting}[language=TypeScript, label=lst:testing:results]
+        feature_processing=FeatureProcessing(
+        				with_mean=True,
+        				with_std=True
+        				with_kurtosis=False,
+                                           with_skew=True)
+\end{lstlisting}
+
+
+
+Далее для созданные объекты отправляются в конструктор класса \texttt{MainModule}.
+
+
+\begin{lstlisting}[language=TypeScript, label=lst:testing:results]
+	main_module = MainModule( 
+				wav_module,
+				preprocessing_module,
+				spectral_transformer,
+				feature_extractor,
+				feature_processing
+				 
+\end{lstlisting}
+
+Объект класс сконфигурирован для извлечения информационных образов. Далее для получения образа вызывается  метод \texttt{get\_feature}, которому необходимо передать путь к MP3 или WAV файлу, а также метаинформациию по необходимости. Метод вернёт массив объектов класса \texttt{TrackModel}. И для получения вектора информационных образов необходимо вызвать метод \texttt{to\_vector()}. Если же информационные образы необходимо сохранить в базе данных MongoDB, то создаётся модуль хранения информационных образов.
+
+Для создания модуля для хранения информациионных образов необходимо создать объект класса \texttt{DatabaseModule},  где в конструкторе указывается ip адрес и порт сервера MongoDB.
+
+\begin{lstlisting}[language=TypeScript, label=lst:testing:results]
+	db = DatabaseModule('localhost', 27017)
+\end{lstlisting}
+
+Сохранения информационного образа  происходит с помощью вызова  метода \texttt{store}.
+
+
+Для использования модуля жанровой классификациии необходимо создать объект класса \texttt{GenreClassificationModule}, где в конструкторе  указывается следующие параметры:
+
+\begin{itemize} 
+\item \texttt{labels\_name} -- массив строк содержащий название жанров;
+\item \texttt{cv}  -- количество разбиений при перекрёстной проверки;
+\item \texttt{classifiers}  -- ассоциативный массив методов классификации, где ключом является название метода, а значением  -- объект класса;
+\end{itemize}
+
+\begin{lstlisting}[language=TypeScript, label=lst:testing:results]
+clf = {
+    'Nearest Neighbors 3': KNeighborsClassifier(3),
+    'Decision Tree': DecisionTreeClassifier(),
+    'AdaBoost': AdaBoostClassifier(),
+    'Gaussian Naive Bayes': GaussianNB(),
+    'QDA': QuadraticDiscriminantAnalysis(),
+    ...
+}
+
+clf_module = GenreClassificationModule(cv=10, labels_name=genre_list, classifiers=clf)
+				 
+\end{lstlisting}
+
+
+

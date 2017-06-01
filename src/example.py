@@ -39,7 +39,7 @@ else:
     path = '/home/pavel/Downloads/genres'
     path_to_wav = path + '/*/*.wav'
 
-#db = DatabaseModule('localhost', 27017)
+db = DatabaseModule('localhost', 27017)
 def extract_and_save():
     X = []
     Y = []
