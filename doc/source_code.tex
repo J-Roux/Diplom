@@ -1,25 +1,57 @@
-import numpy as np
-import pywt
-import scipy
-from scipy import signal
-from sklearn.preprocessing import scale
+\newpage
+\pagenumbering{gobble}
 
-from preprocessing_module import LowPassSinglePole
-from track import Track
+\begin{lstlisting}[language=TypeScript, basicstyle=\small\ttfamily]
+class PreprocessingModule:
+    alpha = 0.0
+    overlap = 0.0
+    cut_start = 0.0
+    cut_end = 0.0
+    frame_size_sec = 0
 
+    def __init__(self, alpha, overlap, cut_start, cut_end, frame_size_sec):
+        self.alpha = alpha
+        self.overlap = overlap
+        self.cut_end = cut_end
+        self.cut_start = cut_start
+        self.frame_size_sec = frame_size_sec
 
-class SpectralTrack(Track):
-    spectral_data = []
-    percussion_data = []
+    def scale(self, track):
+        track.data = track.data.astype('float64')
+        track.data = scale(track.data, with_std=True, with_mean=True)
+        return track
 
-    def __init__(self, track, spectral_data, percussion_data):
-        self.sample_rate = track.sample_rate
-        self.label = track.label
-        self.data = track.data
-        self.spectral_data = spectral_data
-        self.percussion_data = percussion_data
+    def stereo_to_mono(self, track):
+        if len(track.data.shape) > 1:
+            track.data = np.mean(track.data, axis=0)
+        return track
 
+    def filter(self, track):
+        fltr = LowPassSinglePole(self.alpha)
+        filter = np.vectorize(lambda x: fltr.filter(x))
+        track.data = filter(track.data)
+        return track
 
+    def framing(self, track):
+        frame_size = self.frame_size_sec * track.sample_rate
+        data = track.data
+        results = []
+        iteration = int((1 - self.overlap) * frame_size)
+        stop = (int(len(data) / iteration) - 1) * iteration
+        for i in range(0, stop, iteration):
+            results.append(Track((track.sample_rate, data[i:i + frame_size]), track.label))
+        return results
+
+    def cutting(self, track):
+        length = len(track.data)
+        track.data = track.data[int(length * self.cut_start)
+        : int(length * (1 - self.cut_end))]
+        return track
+\end{lstlisting}
+
+\newpage
+
+\begin{lstlisting}[language=TypeScript, basicstyle=\small\ttfamily]
 class SpectralTransformer:
     window = signal.hamming(1024)
     level = 4
@@ -33,7 +65,7 @@ class SpectralTransformer:
         self.rate = rate
 
     def short_time_fourier(self, track):
-        # type : (Track, list) -> ndarray
+
         f, t, Zxx = signal.stft(track.data,
                                 window=self.window,
                                 nperseg=len(self.window))
@@ -85,3 +117,7 @@ class SpectralTransformer:
         data = self.normalize_and_sum(results)
         return data
 
+\end{lstlisting}
+
+\newpage
+\pagenumbering{arabic}
