@@ -7,7 +7,7 @@
 В качестве исходной выборки был использован репозиторий GZTAG. Набор данных состоит из 1000 звуковых дорожек каждые по 30 секунд. Он содержит 10 жанров, каждый из которых представлен 100 треками. Все треки - это все 220-мегагерцовые Mono 16-битные аудиофайлы в формате .wav.
 
 
-Для решения задачи классификации была использована библиотека scikit-learn -- бесплатная библиотека для машинного обучения с открытым исходным кодом для языка программирования Python. Все методы классификации использованы с параметрами по умолчанию. 
+Для решения задачи классификации была использована библиотека scikit-learn. Библиотека scikit-learn предоставляет реализацию целого ряда алгоритмов для обучения с учителем (Supervised Learning) и обучения без учителя (Unsupervised Learning) через интерфейс для языка программирования Python. Данная библиотека распространяется под лицензией <<Simplified BSD License>> и имеет дистрибутивы для множества различных версий Linux, поощрая тем самым академическое и коммерческое использование scikit-learn.ю. 
 
 \subsection{AdaBoost с деревьями принятия решений}
 
@@ -67,7 +67,7 @@ AdaBoost вызывает слабый классификатор в цикле.
 
 \begin{figure}[h]
 \centering
-  \includegraphics[scale=0.9]{LinearSVM.png}
+  \includegraphics[scale=1.1]{LinearSVM.png}
   \caption{Матрица ошибок для фрагмента трека   полученная с помощь метода опорных векторов}
   \label{fig:results:LinearSVM}
 \end{figure}
@@ -131,7 +131,7 @@ AdaBoost вызывает слабый классификатор в цикле.
 
 \begin{figure}[h]
 \centering
-  \includegraphics[scale=0.9]{NearestNeighbors.png}
+  \includegraphics[scale=0.8]{NearestNeighbors.png}
   \caption{Матрица ошибок для фрагмента трека полученная с помощь метода k ближайших соседей}
   \label{fig:results:NearestNeighbors}
 \end{figure}
@@ -140,7 +140,7 @@ AdaBoost вызывает слабый классификатор в цикле.
 
 \begin{figure}[h]
 \centering
-  \includegraphics[scale=0.9]{NearestNeighbors_new1.png}
+  \includegraphics[scale=0.8]{NearestNeighbors_new1.png}
   \caption{Матрица ошибок  для всего трека  полученная с помощь метода k ближайших соседей}
   \label{fig:results:NearestNeighbors_new}
 \end{figure}
